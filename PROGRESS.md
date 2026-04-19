@@ -32,7 +32,7 @@ Items are ordered by dependency — do not reorder.
       `npm install --save-dev vitest @vitest/coverage-v8 ajv ajv-formats nock
       @biomejs/biome`. Update `package.json` scripts: `test`, `lint`, `check`,
       `format`, `smoke`. (Depends on A1.)
-- [ ] **A5 — `src/validate.ts`.** Define Zod schemas for every tool input.
+- [x] **A5 — `src/validate.ts`.** Define Zod schemas for every tool input.
       Exports `validateInput(toolName, args): T` and throws `ValidationError`.
       Includes these literal enum constants (do NOT guess — copy verbatim):
       - `SetType = ['warmup', 'normal', 'failure', 'dropset']`
@@ -57,7 +57,7 @@ Items are ordered by dependency — do not reorder.
       - UUID format on `workoutId`, `routineId`, `exerciseTemplateId`,
         `exercise_template_id`. `folderId` is a positive integer.
       - `.strict()` on every object schema → unknown keys reject.
-- [ ] **A6 — `src/errors.ts`.** Define `ValidationError`, `HevyApiError`,
+- [x] **A6 — `src/errors.ts`.** Define `ValidationError`, `HevyApiError`,
       and `toToolExecutionError(err)` returning a single SEP-1303 shape:
       `{ isError: true, content: [{ type: 'text', text: JSON.stringify({
       error_code, message, details?, hint? }) }] }`. Error codes:
