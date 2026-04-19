@@ -126,6 +126,19 @@ Items are ordered by dependency — do not reorder.
       greps for Spanish markers (accented vowels `[áéíóúñ¿¡]` outside string
       literals, common Spanish words) across all user-facing files and fails
       on any hit.
+- [x] **A21 — First-run auth flow.** Ship a `setup` CLI subcommand
+      (`npx @diecoscai/hevy-mcp setup`) that prints the
+      `https://hevy.com/settings?developer` URL, prompts for the API key via
+      `node:readline/promises`, validates UUID v4, probes
+      `GET /v1/user/info` (retries up to 3× on non-200), and writes
+      `$XDG_CONFIG_HOME/hevy-mcp/config.json` (mode `0600`, dir `0700`; falls
+      back to `~/.config/hevy-mcp/config.json`). Refuses to overwrite without
+      `y/N` confirmation. Server boot now loads the key via a new
+      `src/config.ts` loader with env-first / file-fallback precedence and
+      surfaces `MissingCredentialsError` instead of the old
+      `process.exit(1)`. `src/index.ts` parses `process.argv.slice(2)` and
+      dispatches `setup`, `--help` / `-h`, and `--version` / `-v`. Version
+      bumped `1.0.0 → 0.1.0`. Built-ins only (no new npm deps).
 
 ---
 
