@@ -1,5 +1,7 @@
 node_modules/
 dist/
+coverage/
 .env
 *.log
 tests/__cache__/
+VERIFICATION.md
