@@ -6,23 +6,21 @@ import {
   ListToolsRequestSchema,
   type Tool,
 } from '@modelcontextprotocol/sdk/types.js';
+import { MissingCredentialsError, resolveApiKey } from './config.js';
 import { dryRunResult, HevyApiError, toToolExecutionError, UnknownToolError } from './errors.js';
+import { runSetup } from './setup.js';
 import { isKnownTool, validateInput } from './validate.js';
 
 const require = createRequire(import.meta.url);
 const pkg = require('../package.json') as { name: string; version: string };
 
-const API_KEY = process.env.HEVY_API_KEY;
 const BASE_URL = 'https://api.hevyapp.com';
 const ALLOW_WRITES = process.env.HEVY_MCP_ALLOW_WRITES === '1';
 
-if (!API_KEY) {
-  console.error('HEVY_API_KEY environment variable is required');
-  process.exit(1);
-}
+let API_KEY = '';
 
 async function hevyFetch(path: string, options: RequestInit = {}): Promise<unknown> {
-  const apiKey = API_KEY ?? '';
+  const apiKey = API_KEY;
   const res = await fetch(`${BASE_URL}${path}`, {
     ...options,
     headers: {
@@ -685,10 +683,65 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
   }
 });
 
-async function main() {
+function printUsage() {
+  const lines = [
+    `${pkg.name} ${pkg.version}`,
+    '',
+    'Usage:',
+    '  npx @diecoscai/hevy-mcp           Start the MCP server on stdio.',
+    '  npx @diecoscai/hevy-mcp setup     Interactively store your Hevy API key.',
+    '  npx @diecoscai/hevy-mcp --help    Show this help.',
+    '  npx @diecoscai/hevy-mcp --version Show the installed version.',
+    '',
+    'Authentication:',
+    '  1. HEVY_API_KEY env var (takes precedence), or',
+    '  2. Config file at $XDG_CONFIG_HOME/hevy-mcp/config.json',
+    '     (falls back to ~/.config/hevy-mcp/config.json).',
+    '',
+    'Writes (POST/PUT) require HEVY_MCP_ALLOW_WRITES=1; otherwise they return a dry-run payload.',
+  ];
+  console.log(lines.join('\n'));
+}
+
+async function startServer() {
+  try {
+    const { apiKey } = await resolveApiKey();
+    API_KEY = apiKey;
+  } catch (err) {
+    if (err instanceof MissingCredentialsError) {
+      console.error(err.message);
+      process.exit(1);
+    }
+    throw err;
+  }
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error(`${pkg.name}@${pkg.version} running on stdio`);
+}
+
+async function main() {
+  const argv = process.argv.slice(2);
+  const cmd = argv[0];
+
+  if (cmd === '--help' || cmd === '-h' || cmd === 'help') {
+    printUsage();
+    return;
+  }
+  if (cmd === '--version' || cmd === '-v') {
+    console.log(`${pkg.name}@${pkg.version}`);
+    return;
+  }
+  if (cmd === 'setup') {
+    const code = await runSetup();
+    process.exit(code);
+  }
+  if (cmd !== undefined) {
+    console.error(`Unknown argument: ${cmd}`);
+    printUsage();
+    process.exit(2);
+  }
+
+  await startServer();
 }
 
 main().catch((err) => {
