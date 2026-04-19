@@ -20,7 +20,7 @@ body_measurements tools).
 Branch: `feat/hardening`. Builder works here; verifier audit closes the phase.
 Items are ordered by dependency — do not reorder.
 
-- [ ] **A1 — Git init.** Create `/home/dieco/dev/hevy-mcp/.gitignore` with
+- [x] **A1 — Git init.** Create `/home/dieco/dev/hevy-mcp/.gitignore` with
       `node_modules/`, `dist/`, `.env`, `*.log`, `tests/__cache__/`. Run
       `git init -b main`, `git add -A`, initial commit
       `chore: initial commit — hevy-mcp baseline`, then
