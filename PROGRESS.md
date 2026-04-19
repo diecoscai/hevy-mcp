@@ -20,19 +20,19 @@ body_measurements tools).
 Branch: `feat/hardening`. Builder works here; verifier audit closes the phase.
 Items are ordered by dependency — do not reorder.
 
-- [ ] **A1 — Git init.** Create `/home/dieco/dev/hevy-mcp/.gitignore` with
+- [x] **A1 — Git init.** Create `/home/dieco/dev/hevy-mcp/.gitignore` with
       `node_modules/`, `dist/`, `.env`, `*.log`, `tests/__cache__/`. Run
       `git init -b main`, `git add -A`, initial commit
       `chore: initial commit — hevy-mcp baseline`, then
       `git checkout -b feat/hardening`.
-- [ ] **A2 — `LICENSE` (MIT)** at repo root with `Copyright (c) 2026 Diego Iscai`.
-- [ ] **A3 — `README.md` skeleton** (one-paragraph placeholder — the full
+- [x] **A2 — `LICENSE` (MIT)** at repo root with `Copyright (c) 2026 Diego Iscai`.
+- [x] **A3 — `README.md` skeleton** (one-paragraph placeholder — the full
       README is Phase B item B3).
-- [ ] **A4 — Dev dependencies.** `npm install --save zod`,
+- [x] **A4 — Dev dependencies.** `npm install --save zod`,
       `npm install --save-dev vitest @vitest/coverage-v8 ajv ajv-formats nock
       @biomejs/biome`. Update `package.json` scripts: `test`, `lint`, `check`,
       `format`, `smoke`. (Depends on A1.)
-- [ ] **A5 — `src/validate.ts`.** Define Zod schemas for every tool input.
+- [x] **A5 — `src/validate.ts`.** Define Zod schemas for every tool input.
       Exports `validateInput(toolName, args): T` and throws `ValidationError`.
       Includes these literal enum constants (do NOT guess — copy verbatim):
       - `SetType = ['warmup', 'normal', 'failure', 'dropset']`
@@ -57,31 +57,31 @@ Items are ordered by dependency — do not reorder.
       - UUID format on `workoutId`, `routineId`, `exerciseTemplateId`,
         `exercise_template_id`. `folderId` is a positive integer.
       - `.strict()` on every object schema → unknown keys reject.
-- [ ] **A6 — `src/errors.ts`.** Define `ValidationError`, `HevyApiError`,
+- [x] **A6 — `src/errors.ts`.** Define `ValidationError`, `HevyApiError`,
       and `toToolExecutionError(err)` returning a single SEP-1303 shape:
       `{ isError: true, content: [{ type: 'text', text: JSON.stringify({
       error_code, message, details?, hint? }) }] }`. Error codes:
       `VALIDATION_ERROR`, `UPSTREAM_ERROR`, `DRY_RUN`, `UNKNOWN_TOOL`.
       Messages are LLM-actionable (e.g. `"title must be ≤ 255 chars; got 300"`).
-- [ ] **A7 — Wire validation + SEP-1303 errors into `src/index.ts`.** Every
+- [x] **A7 — Wire validation + SEP-1303 errors into `src/index.ts`.** Every
       tool handler calls `validateInput(name, args)` before touching the
       network. Any thrown error routes through `toToolExecutionError`.
       Remove the legacy `Error: ${message}` pass-through.
-- [ ] **A8 — Dry-run safety.** Read `HEVY_MCP_ALLOW_WRITES` once at boot.
+- [x] **A8 — Dry-run safety.** Read `HEVY_MCP_ALLOW_WRITES` once at boot.
       Wrap every `POST`/`PUT` tool handler: when unset, return
       `{ dry_run: true, would_send: { method, path, body }, hint: "set
       HEVY_MCP_ALLOW_WRITES=1 to execute" }` as a normal (non-error)
       tool result. Document in every write-tool description.
-- [ ] **A9 — Clamp `pageSize` in handlers.** After A5 validation, pass the
+- [x] **A9 — Clamp `pageSize` in handlers.** After A5 validation, pass the
       clamped value through to `hevyFetch`. The current code forwards any
       number and surfaces the server's 400 — fix in every list handler:
       `hevy_list_workouts`, `hevy_list_routines`, `hevy_list_routine_folders`,
       `hevy_list_exercise_templates` (cap 100), `hevy_get_workout_events`,
       `hevy_get_exercise_history`, and the new `hevy_list_body_measurements`.
-- [ ] **A10 — Add `hevy_list_body_measurements`.** `GET /v1/body_measurements`,
+- [x] **A10 — Add `hevy_list_body_measurements`.** `GET /v1/body_measurements`,
       params `page` (≥1), `pageSize` (1–10). Response envelope
       `{ page, page_count, body_measurements: [] }`.
-- [ ] **A11 — Add `hevy_create_body_measurement`.** `POST /v1/body_measurements`.
+- [x] **A11 — Add `hevy_create_body_measurement`.** `POST /v1/body_measurements`.
       Required field: `date` (`YYYY-MM-DD`). All 17 metric fields optional:
       `weight_kg`, `lean_mass_kg`, `fat_percent`, `neck_cm`, `shoulder_cm`,
       `chest_cm`, `left_bicep_cm`, `right_bicep_cm`, `left_forearm_cm`,
@@ -89,14 +89,14 @@ Items are ordered by dependency — do not reorder.
       `right_thigh`, `left_calf`, `right_calf`. Description must flag the
       409-on-duplicate-date behaviour and the validator-before-auth quirk.
       Covered by dry-run (A8).
-- [ ] **A12 — Add `hevy_get_body_measurement`.** `GET /v1/body_measurements/{date}`.
+- [x] **A12 — Add `hevy_get_body_measurement`.** `GET /v1/body_measurements/{date}`.
       Required: `date` (`YYYY-MM-DD`, strict). Description notes 404 on
       missing date.
-- [ ] **A13 — Add `hevy_update_body_measurement`.** `PUT /v1/body_measurements/{date}`.
+- [x] **A13 — Add `hevy_update_body_measurement`.** `PUT /v1/body_measurements/{date}`.
       Required: `date` + a `body_measurement` object. Description MUST state
       "full replace — any field not sent is set to NULL" (no partial merge).
       Covered by dry-run (A8).
-- [ ] **A14 — Enrich every tool description** using the specs at
+- [x] **A14 — Enrich every tool description** using the specs at
       `/home/dieco/dev/hobby/hevy-scrap/docs/features/*.md`. Each description
       ≤ 1024 chars, English only. Must mention, where relevant:
       literal enum lists (RPE, SetType, MuscleGroup, EquipmentCategory,
@@ -104,28 +104,55 @@ Items are ordered by dependency — do not reorder.
       "no DELETE exists on any resource", superset contiguity,
       `rep_range` is routines-only (not workouts), body_measurements keyed
       by date with PUT-replace semantics, and the dry-run flag for writes.
-- [ ] **A15 — Version from `package.json`.** Replace the hardcoded
+- [x] **A15 — Version from `package.json`.** Replace the hardcoded
       `version: '1.0.0'` in `new Server({...})` with a read from
       `package.json` (via `createRequire` or a build-time inline). Same for
       `name`.
-- [ ] **A16 — Biome config.** `biome.json` with 2-space indent, single
+- [x] **A16 — Biome config.** `biome.json` with 2-space indent, single
       quotes, `organizeImports` on. Scripts: `lint`, `check`, `format`.
-- [ ] **A17 — QA: smoke test.** `scripts/smoke.sh`: `npm ci && npm run build
+- [x] **A17 — QA: smoke test.** `scripts/smoke.sh`: `npm ci && npm run build
       && npm test && npm run lint`, then spawn `node dist/index.js`, send
       `initialize` + `tools/list`, assert `tools.length === 22` and every
       `inputSchema` validates under `ajv` as JSON Schema Draft 2020-12.
-- [ ] **A18 — QA: unit tests.** `tests/validate.test.ts` covering happy
+- [x] **A18 — QA: unit tests.** `tests/validate.test.ts` covering happy
       paths + negative probes (oversized title, unknown field, bad enum,
       `pageSize=11`, malformed date, RPE=11, unknown set type). Target
       ≥ 80% line coverage on `src/validate.ts` and `src/errors.ts`.
-- [ ] **A19 — QA: integration tests.** `tests/integration/*.test.ts`
+- [x] **A19 — QA: integration tests.** `tests/integration/*.test.ts`
       reading real `api.hevyapp.com` when `HEVY_API_KEY` is set (skip
       otherwise). Writes intercepted with `nock`. Covers: `get_user_info`,
       `list_workouts`, `get_workout`, `list_body_measurements`.
-- [ ] **A20 — QA: language gate.** A repo-wide script (in `scripts/smoke.sh`)
+- [x] **A20 — QA: language gate.** A repo-wide script (in `scripts/smoke.sh`)
       greps for Spanish markers (accented vowels `[áéíóúñ¿¡]` outside string
       literals, common Spanish words) across all user-facing files and fails
       on any hit.
+- [x] **A21 — First-run auth flow.** Ship a `setup` CLI subcommand
+      (`npx @diecoscai/hevy-mcp setup`) that prints the
+      `https://hevy.com/settings?developer` URL, prompts for the API key via
+      `node:readline/promises`, validates UUID v4, probes
+      `GET /v1/user/info` (retries up to 3× on non-200), and writes
+      `$XDG_CONFIG_HOME/hevy-mcp/config.json` (mode `0600`, dir `0700`; falls
+      back to `~/.config/hevy-mcp/config.json`). Refuses to overwrite without
+      `y/N` confirmation. Server boot now loads the key via a new
+      `src/config.ts` loader with env-first / file-fallback precedence and
+      surfaces `MissingCredentialsError` instead of the old
+      `process.exit(1)`. `src/index.ts` parses `process.argv.slice(2)` and
+      dispatches `setup`, `--help` / `-h`, and `--version` / `-v`. Version
+      bumped `1.0.0 → 0.1.0`. Built-ins only (no new npm deps).
+- [x] **A21 tests — Auth flow coverage.** `tests/config.test.ts` (26
+      tests) covers `isValidApiKey`, `configDir`, `configPath`,
+      `readStoredConfig`, and `resolveApiKey` against an isolated
+      `os.tmpdir()` + `fs.mkdtemp` sandbox. `tests/setup.test.ts` (7
+      tests) drives `runSetup` with injected `io`/`probe`/`env`/`now`:
+      happy path (file mode 0600, dir mode 0700, payload shape),
+      retry-then-succeed, three-401s failure, overwrite decline/accept,
+      whitespace trimming. `tests/cli.test.ts` (7 tests) spawns
+      `node dist/index.js` for `--help`/`-h`, `--version`/`-v`, `setup`
+      (prompt-then-kill), default-no-creds exit=1 with setup hint, and
+      `HEVY_API_KEY` boot answering `initialize` on stdio. Coverage:
+      `src/config.ts` 100%, `src/setup.ts` 73.41%
+      (defaults `createReadlineIO`/`defaultApiProbe` unexercised by
+      design — they are I/O shims around stdin/fetch).
 
 ---
 
