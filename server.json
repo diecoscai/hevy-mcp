@@ -1,0 +1,13 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-07-09/server.schema.json",
+  "name": "io.github.diecoscai/hevy-mcp",
+  "description": "Model Context Protocol server for the Hevy fitness API. Manage workouts, routines, exercises, and body measurements from any MCP-compatible client.",
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@diecoscai/hevy-mcp",
+      "version": "0.1.0"
+    }
+  ]
+}
