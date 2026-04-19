@@ -25,8 +25,8 @@ Items are ordered by dependency — do not reorder.
       `git init -b main`, `git add -A`, initial commit
       `chore: initial commit — hevy-mcp baseline`, then
       `git checkout -b feat/hardening`.
-- [ ] **A2 — `LICENSE` (MIT)** at repo root with `Copyright (c) 2026 Diego Iscai`.
-- [ ] **A3 — `README.md` skeleton** (one-paragraph placeholder — the full
+- [x] **A2 — `LICENSE` (MIT)** at repo root with `Copyright (c) 2026 Diego Iscai`.
+- [x] **A3 — `README.md` skeleton** (one-paragraph placeholder — the full
       README is Phase B item B3).
 - [ ] **A4 — Dev dependencies.** `npm install --save zod`,
       `npm install --save-dev vitest @vitest/coverage-v8 ajv ajv-formats nock
