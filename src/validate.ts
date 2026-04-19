@@ -69,8 +69,12 @@ const exerciseTemplateIdSchema = z
   .string()
   .min(1)
   .refine(
-    (v) => /^[0-9A-F]{8}$/.test(v) || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(v),
-    { message: 'exercise template id must be 8-uppercase-hex (built-in) or lowercase UUID (custom)' }
+    (v) =>
+      /^[0-9A-F]{8}$/.test(v) ||
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(v),
+    {
+      message: 'exercise template id must be 8-uppercase-hex (built-in) or lowercase UUID (custom)',
+    }
   );
 
 const titleSchema = z.string().min(1).max(255);
@@ -89,18 +93,17 @@ const dateSchema = z
       const [y, m, d] = v.split('-').map(Number);
       if (!y || !m || !d) return false;
       const dt = new Date(Date.UTC(y, m - 1, d));
-      return (
-        dt.getUTCFullYear() === y &&
-        dt.getUTCMonth() === m - 1 &&
-        dt.getUTCDate() === d
-      );
+      return dt.getUTCFullYear() === y && dt.getUTCMonth() === m - 1 && dt.getUTCDate() === d;
     },
     { message: 'date must be a valid calendar date (YYYY-MM-DD)' }
   );
 
-const isoDateTimeSchema = z.string().min(1).refine((v) => !Number.isNaN(Date.parse(v)), {
-  message: 'must be an ISO-8601 datetime',
-});
+const isoDateTimeSchema = z
+  .string()
+  .min(1)
+  .refine((v) => !Number.isNaN(Date.parse(v)), {
+    message: 'must be an ISO-8601 datetime',
+  });
 
 const rpeSchema = z
   .union([z.number(), z.null()])
@@ -235,38 +238,26 @@ const schemas = {
     })
     .strict(),
   hevy_create_workout: z.object({ workout: workoutBodySchema }).strict(),
-  hevy_update_workout: z
-    .object({ workoutId: uuid, workout: workoutBodySchema })
-    .strict(),
+  hevy_update_workout: z.object({ workoutId: uuid, workout: workoutBodySchema }).strict(),
 
   hevy_list_routines: z
     .object({ page: pageSchema.optional(), pageSize: pageSizeSchema.optional() })
     .strict(),
   hevy_get_routine: z.object({ routineId: uuid }).strict(),
   hevy_create_routine: z.object({ routine: routineBodySchema }).strict(),
-  hevy_update_routine: z
-    .object({ routineId: uuid, routine: routineBodySchema })
-    .strict(),
+  hevy_update_routine: z.object({ routineId: uuid, routine: routineBodySchema }).strict(),
 
   hevy_list_routine_folders: z
     .object({ page: pageSchema.optional(), pageSize: pageSizeSchema.optional() })
     .strict(),
-  hevy_get_routine_folder: z
-    .object({ folderId: z.coerce.number().int().positive() })
-    .strict(),
-  hevy_create_routine_folder: z
-    .object({ title: titleSchema })
-    .strict(),
+  hevy_get_routine_folder: z.object({ folderId: z.coerce.number().int().positive() }).strict(),
+  hevy_create_routine_folder: z.object({ title: titleSchema }).strict(),
 
   hevy_list_exercise_templates: z
     .object({ page: pageSchema.optional(), pageSize: pageSizeLargeSchema.optional() })
     .strict(),
-  hevy_get_exercise_template: z
-    .object({ exerciseTemplateId: exerciseTemplateIdSchema })
-    .strict(),
-  hevy_create_exercise_template: z
-    .object({ exercise: exerciseTemplateCreateSchema })
-    .strict(),
+  hevy_get_exercise_template: z.object({ exerciseTemplateId: exerciseTemplateIdSchema }).strict(),
+  hevy_create_exercise_template: z.object({ exercise: exerciseTemplateCreateSchema }).strict(),
 
   hevy_get_exercise_history: z
     .object({
@@ -291,7 +282,7 @@ export type ToolName = keyof typeof schemas;
 export const TOOL_NAMES = Object.keys(schemas) as ToolName[];
 
 export function isKnownTool(name: string): name is ToolName {
-  return Object.prototype.hasOwnProperty.call(schemas, name);
+  return Object.hasOwn(schemas, name);
 }
 
 function formatIssue(issue: z.core.$ZodIssue): string {

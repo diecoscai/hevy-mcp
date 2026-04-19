@@ -6,12 +6,7 @@ import {
   ListToolsRequestSchema,
   type Tool,
 } from '@modelcontextprotocol/sdk/types.js';
-import {
-  HevyApiError,
-  UnknownToolError,
-  dryRunResult,
-  toToolExecutionError,
-} from './errors.js';
+import { dryRunResult, HevyApiError, toToolExecutionError, UnknownToolError } from './errors.js';
 import { isKnownTool, validateInput } from './validate.js';
 
 const require = createRequire(import.meta.url);
@@ -27,10 +22,11 @@ if (!API_KEY) {
 }
 
 async function hevyFetch(path: string, options: RequestInit = {}): Promise<unknown> {
+  const apiKey = API_KEY ?? '';
   const res = await fetch(`${BASE_URL}${path}`, {
     ...options,
     headers: {
-      'api-key': API_KEY!,
+      'api-key': apiKey,
       'Content-Type': 'application/json',
       ...options.headers,
     },
@@ -161,7 +157,8 @@ const workoutExerciseSchema = {
     },
     superset_id: {
       type: ['integer', 'null'],
-      description: 'Contiguous integer group id (or null). Supersets must be adjacent and share the same id.',
+      description:
+        'Contiguous integer group id (or null). Supersets must be adjacent and share the same id.',
     },
     notes: { type: 'string', maxLength: 2048 },
     sets: { type: 'array', minItems: 1, items: workoutSetSchema },
@@ -271,7 +268,10 @@ const TOOLS: Tool[] = [
       type: 'object',
       additionalProperties: false,
       properties: {
-        since: { type: 'string', description: 'ISO-8601 datetime; only events after this are returned.' },
+        since: {
+          type: 'string',
+          description: 'ISO-8601 datetime; only events after this are returned.',
+        },
         ...pageParams,
       },
     },
@@ -376,7 +376,11 @@ const TOOLS: Tool[] = [
     name: 'hevy_list_exercise_templates',
     description:
       'List exercise templates (built-in + custom). Envelope: { page, page_count, exercise_templates }. pageSize is 1-100 — this is the ONE endpoint with a larger cap; every other list is capped at 10. Built-in ids are 8-char uppercase hex; custom ids are lowercase UUIDs.',
-    inputSchema: { type: 'object', additionalProperties: false, properties: { ...pageParamsLarge } },
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      properties: { ...pageParamsLarge },
+    },
   },
   {
     name: 'hevy_get_exercise_template',
@@ -627,8 +631,6 @@ async function dispatch(name: string, rawArgs: unknown): Promise<unknown> {
     }
     case 'hevy_create_body_measurement': {
       const args = validateInput(name, rawArgs);
-      const { date: _date, ...metrics } = args;
-      void _date;
       const gate = guardWrite('POST', '/v1/body_measurements', args);
       if (gate) return gate;
       return hevyFetch('/v1/body_measurements', {

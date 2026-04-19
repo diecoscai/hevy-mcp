@@ -108,7 +108,7 @@ Items are ordered by dependency — do not reorder.
       `version: '1.0.0'` in `new Server({...})` with a read from
       `package.json` (via `createRequire` or a build-time inline). Same for
       `name`.
-- [ ] **A16 — Biome config.** `biome.json` with 2-space indent, single
+- [x] **A16 — Biome config.** `biome.json` with 2-space indent, single
       quotes, `organizeImports` on. Scripts: `lint`, `check`, `format`.
 - [ ] **A17 — QA: smoke test.** `scripts/smoke.sh`: `npm ci && npm run build
       && npm test && npm run lint`, then spawn `node dist/index.js`, send

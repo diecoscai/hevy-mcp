@@ -1,8 +1,4 @@
-export type ErrorCode =
-  | 'VALIDATION_ERROR'
-  | 'UPSTREAM_ERROR'
-  | 'DRY_RUN'
-  | 'UNKNOWN_TOOL';
+export type ErrorCode = 'VALIDATION_ERROR' | 'UPSTREAM_ERROR' | 'DRY_RUN' | 'UNKNOWN_TOOL';
 
 export class ValidationError extends Error {
   readonly code: ErrorCode = 'VALIDATION_ERROR';
@@ -97,7 +93,11 @@ export function toToolExecutionError(err: unknown): SepErrorResult {
   };
 }
 
-export function dryRunResult(method: string, path: string, body?: unknown): {
+export function dryRunResult(
+  method: string,
+  path: string,
+  body?: unknown
+): {
   content: Array<{ type: 'text'; text: string }>;
 } {
   const payload = {
