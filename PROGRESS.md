@@ -28,7 +28,7 @@ Items are ordered by dependency — do not reorder.
 - [x] **A2 — `LICENSE` (MIT)** at repo root with `Copyright (c) 2026 Diego Iscai`.
 - [x] **A3 — `README.md` skeleton** (one-paragraph placeholder — the full
       README is Phase B item B3).
-- [ ] **A4 — Dev dependencies.** `npm install --save zod`,
+- [x] **A4 — Dev dependencies.** `npm install --save zod`,
       `npm install --save-dev vitest @vitest/coverage-v8 ajv ajv-formats nock
       @biomejs/biome`. Update `package.json` scripts: `test`, `lint`, `check`,
       `format`, `smoke`. (Depends on A1.)

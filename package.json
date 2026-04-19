@@ -6,14 +6,27 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "dev": "node --loader ts-node/esm src/index.ts",
-    "start": "node dist/index.js"
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "biome lint src tests",
+    "format": "biome format --write src tests",
+    "check": "biome check src tests",
+    "smoke": "bash scripts/smoke.sh"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.0"
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.12",
     "@types/node": "^22.0.0",
-    "typescript": "^5.0.0"
+    "@vitest/coverage-v8": "^4.1.4",
+    "ajv": "^8.18.0",
+    "ajv-formats": "^3.0.1",
+    "nock": "^14.0.12",
+    "typescript": "^5.0.0",
+    "vitest": "^4.1.4"
   }
 }
