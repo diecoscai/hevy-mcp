@@ -43,7 +43,7 @@ export interface SepErrorPayload {
 
 export interface SepErrorResult {
   isError: true;
-  content: [{ type: 'text'; text: string }];
+  content: Array<{ type: 'text'; text: string }>;
 }
 
 function hintFor(code: ErrorCode, err: unknown): string | undefined {
@@ -98,7 +98,7 @@ export function toToolExecutionError(err: unknown): SepErrorResult {
 }
 
 export function dryRunResult(method: string, path: string, body?: unknown): {
-  content: [{ type: 'text'; text: string }];
+  content: Array<{ type: 'text'; text: string }>;
 } {
   const payload = {
     dry_run: true,

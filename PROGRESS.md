@@ -63,25 +63,25 @@ Items are ordered by dependency — do not reorder.
       error_code, message, details?, hint? }) }] }`. Error codes:
       `VALIDATION_ERROR`, `UPSTREAM_ERROR`, `DRY_RUN`, `UNKNOWN_TOOL`.
       Messages are LLM-actionable (e.g. `"title must be ≤ 255 chars; got 300"`).
-- [ ] **A7 — Wire validation + SEP-1303 errors into `src/index.ts`.** Every
+- [x] **A7 — Wire validation + SEP-1303 errors into `src/index.ts`.** Every
       tool handler calls `validateInput(name, args)` before touching the
       network. Any thrown error routes through `toToolExecutionError`.
       Remove the legacy `Error: ${message}` pass-through.
-- [ ] **A8 — Dry-run safety.** Read `HEVY_MCP_ALLOW_WRITES` once at boot.
+- [x] **A8 — Dry-run safety.** Read `HEVY_MCP_ALLOW_WRITES` once at boot.
       Wrap every `POST`/`PUT` tool handler: when unset, return
       `{ dry_run: true, would_send: { method, path, body }, hint: "set
       HEVY_MCP_ALLOW_WRITES=1 to execute" }` as a normal (non-error)
       tool result. Document in every write-tool description.
-- [ ] **A9 — Clamp `pageSize` in handlers.** After A5 validation, pass the
+- [x] **A9 — Clamp `pageSize` in handlers.** After A5 validation, pass the
       clamped value through to `hevyFetch`. The current code forwards any
       number and surfaces the server's 400 — fix in every list handler:
       `hevy_list_workouts`, `hevy_list_routines`, `hevy_list_routine_folders`,
       `hevy_list_exercise_templates` (cap 100), `hevy_get_workout_events`,
       `hevy_get_exercise_history`, and the new `hevy_list_body_measurements`.
-- [ ] **A10 — Add `hevy_list_body_measurements`.** `GET /v1/body_measurements`,
+- [x] **A10 — Add `hevy_list_body_measurements`.** `GET /v1/body_measurements`,
       params `page` (≥1), `pageSize` (1–10). Response envelope
       `{ page, page_count, body_measurements: [] }`.
-- [ ] **A11 — Add `hevy_create_body_measurement`.** `POST /v1/body_measurements`.
+- [x] **A11 — Add `hevy_create_body_measurement`.** `POST /v1/body_measurements`.
       Required field: `date` (`YYYY-MM-DD`). All 17 metric fields optional:
       `weight_kg`, `lean_mass_kg`, `fat_percent`, `neck_cm`, `shoulder_cm`,
       `chest_cm`, `left_bicep_cm`, `right_bicep_cm`, `left_forearm_cm`,
@@ -89,14 +89,14 @@ Items are ordered by dependency — do not reorder.
       `right_thigh`, `left_calf`, `right_calf`. Description must flag the
       409-on-duplicate-date behaviour and the validator-before-auth quirk.
       Covered by dry-run (A8).
-- [ ] **A12 — Add `hevy_get_body_measurement`.** `GET /v1/body_measurements/{date}`.
+- [x] **A12 — Add `hevy_get_body_measurement`.** `GET /v1/body_measurements/{date}`.
       Required: `date` (`YYYY-MM-DD`, strict). Description notes 404 on
       missing date.
-- [ ] **A13 — Add `hevy_update_body_measurement`.** `PUT /v1/body_measurements/{date}`.
+- [x] **A13 — Add `hevy_update_body_measurement`.** `PUT /v1/body_measurements/{date}`.
       Required: `date` + a `body_measurement` object. Description MUST state
       "full replace — any field not sent is set to NULL" (no partial merge).
       Covered by dry-run (A8).
-- [ ] **A14 — Enrich every tool description** using the specs at
+- [x] **A14 — Enrich every tool description** using the specs at
       `/home/dieco/dev/hobby/hevy-scrap/docs/features/*.md`. Each description
       ≤ 1024 chars, English only. Must mention, where relevant:
       literal enum lists (RPE, SetType, MuscleGroup, EquipmentCategory,
@@ -104,7 +104,7 @@ Items are ordered by dependency — do not reorder.
       "no DELETE exists on any resource", superset contiguity,
       `rep_range` is routines-only (not workouts), body_measurements keyed
       by date with PUT-replace semantics, and the dry-run flag for writes.
-- [ ] **A15 — Version from `package.json`.** Replace the hardcoded
+- [x] **A15 — Version from `package.json`.** Replace the hardcoded
       `version: '1.0.0'` in `new Server({...})` with a read from
       `package.json` (via `createRequire` or a build-time inline). Same for
       `name`.
