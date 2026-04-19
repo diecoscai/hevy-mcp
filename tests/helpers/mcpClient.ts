@@ -140,9 +140,9 @@ export async function initializeClient(client: McpClient): Promise<void> {
   client.send({ jsonrpc: '2.0', method: 'notifications/initialized' });
 }
 
-export async function listTools(client: McpClient): Promise<
-  Array<{ name: string; description: string; inputSchema: Record<string, unknown> }>
-> {
+export async function listTools(
+  client: McpClient
+): Promise<Array<{ name: string; description: string; inputSchema: Record<string, unknown> }>> {
   const id = client.nextId();
   client.send({ jsonrpc: '2.0', id, method: 'tools/list', params: {} });
   const msg = await client.waitFor(id);

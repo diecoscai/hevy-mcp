@@ -258,9 +258,9 @@ describe('validateInput — happy paths', () => {
 
 describe('validateInput — negative probes', () => {
   it('rejects unknown tool name', () => {
-    expect(() =>
-      validateInput('not_a_tool' as unknown as 'hevy_get_user_info', {})
-    ).toThrow(ValidationError);
+    expect(() => validateInput('not_a_tool' as unknown as 'hevy_get_user_info', {})).toThrow(
+      ValidationError
+    );
   });
 
   it('rejects hevy_create_exercise_template with 101-char title', () => {
@@ -286,9 +286,9 @@ describe('validateInput — negative probes', () => {
   });
 
   it('rejects hevy_create_routine_folder with 300-char title', () => {
-    expect(() =>
-      validateInput('hevy_create_routine_folder', { title: 'x'.repeat(300) })
-    ).toThrow(ValidationError);
+    expect(() => validateInput('hevy_create_routine_folder', { title: 'x'.repeat(300) })).toThrow(
+      ValidationError
+    );
   });
 
   it('rejects hevy_list_workouts with pageSize 0, 11, -1, and 5.5', () => {
