@@ -139,6 +139,20 @@ Items are ordered by dependency — do not reorder.
       `process.exit(1)`. `src/index.ts` parses `process.argv.slice(2)` and
       dispatches `setup`, `--help` / `-h`, and `--version` / `-v`. Version
       bumped `1.0.0 → 0.1.0`. Built-ins only (no new npm deps).
+- [x] **A21 tests — Auth flow coverage.** `tests/config.test.ts` (26
+      tests) covers `isValidApiKey`, `configDir`, `configPath`,
+      `readStoredConfig`, and `resolveApiKey` against an isolated
+      `os.tmpdir()` + `fs.mkdtemp` sandbox. `tests/setup.test.ts` (7
+      tests) drives `runSetup` with injected `io`/`probe`/`env`/`now`:
+      happy path (file mode 0600, dir mode 0700, payload shape),
+      retry-then-succeed, three-401s failure, overwrite decline/accept,
+      whitespace trimming. `tests/cli.test.ts` (7 tests) spawns
+      `node dist/index.js` for `--help`/`-h`, `--version`/`-v`, `setup`
+      (prompt-then-kill), default-no-creds exit=1 with setup hint, and
+      `HEVY_API_KEY` boot answering `initialize` on stdio. Coverage:
+      `src/config.ts` 100%, `src/setup.ts` 73.41%
+      (defaults `createReadlineIO`/`defaultApiProbe` unexercised by
+      design — they are I/O shims around stdin/fetch).
 
 ---
 
