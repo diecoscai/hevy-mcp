@@ -110,7 +110,7 @@ Items are ordered by dependency — do not reorder.
       `name`.
 - [x] **A16 — Biome config.** `biome.json` with 2-space indent, single
       quotes, `organizeImports` on. Scripts: `lint`, `check`, `format`.
-- [ ] **A17 — QA: smoke test.** `scripts/smoke.sh`: `npm ci && npm run build
+- [x] **A17 — QA: smoke test.** `scripts/smoke.sh`: `npm ci && npm run build
       && npm test && npm run lint`, then spawn `node dist/index.js`, send
       `initialize` + `tools/list`, assert `tools.length === 22` and every
       `inputSchema` validates under `ajv` as JSON Schema Draft 2020-12.
@@ -122,7 +122,7 @@ Items are ordered by dependency — do not reorder.
       reading real `api.hevyapp.com` when `HEVY_API_KEY` is set (skip
       otherwise). Writes intercepted with `nock`. Covers: `get_user_info`,
       `list_workouts`, `get_workout`, `list_body_measurements`.
-- [ ] **A20 — QA: language gate.** A repo-wide script (in `scripts/smoke.sh`)
+- [x] **A20 — QA: language gate.** A repo-wide script (in `scripts/smoke.sh`)
       greps for Spanish markers (accented vowels `[áéíóúñ¿¡]` outside string
       literals, common Spanish words) across all user-facing files and fails
       on any hit.
