@@ -1,6 +1,6 @@
 import { mkdir, stat, writeFile } from 'node:fs/promises';
-import * as readline from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
+import * as readline from 'node:readline/promises';
 import { configDir, configPath, isValidApiKey, readStoredConfig } from './config.js';
 
 export interface SetupIO {

@@ -2,7 +2,12 @@ import { createRequire } from 'node:module';
 import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { initializeClient, listTools, type McpClient, startMcpServer } from './helpers/mcpClient.js';
+import {
+  initializeClient,
+  listTools,
+  type McpClient,
+  startMcpServer,
+} from './helpers/mcpClient.js';
 
 const require = createRequire(import.meta.url);
 const pkg = require('../package.json') as { name: string; version: string };

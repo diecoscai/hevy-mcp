@@ -1,19 +1,53 @@
 {
-  "name": "hevy-mcp",
+  "name": "@diecoscai/hevy-mcp",
   "version": "0.1.0",
-  "description": "MCP server for the Hevy fitness API",
+  "description": "Model Context Protocol server for the Hevy fitness API. Manage workouts, routines, exercises, and body measurements from any MCP-compatible client.",
   "type": "module",
-  "main": "dist/index.js",
+  "bin": {
+    "hevy-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist/**",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "hevy",
+    "fitness",
+    "workout",
+    "tracker",
+    "api"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/diecoscai/hevy-mcp.git"
+  },
+  "homepage": "https://github.com/diecoscai/hevy-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/diecoscai/hevy-mcp/issues"
+  },
+  "author": "Diego Iscai",
+  "license": "MIT",
+  "mcpName": "io.github.diecoscai/hevy-mcp",
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
+    "build": "tsc && chmod +x dist/index.js",
     "start": "node dist/index.js",
-    "test": "vitest run --passWithNoTests",
+    "dev": "tsc --watch",
+    "test": "vitest run",
     "test:watch": "vitest",
+    "coverage": "vitest run --coverage",
     "lint": "biome lint src tests",
     "format": "biome format --write src tests",
     "check": "biome check src tests",
-    "smoke": "bash scripts/smoke.sh"
+    "smoke": "bash scripts/smoke.sh",
+    "inspect": "npx -y @modelcontextprotocol/inspector node dist/index.js",
+    "prepublishOnly": "npm run build && npm test && npm run lint"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",

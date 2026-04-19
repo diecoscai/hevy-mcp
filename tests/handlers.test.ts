@@ -1,11 +1,6 @@
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
-import {
-  callTool,
-  initializeClient,
-  type McpClient,
-  startMcpServer,
-} from './helpers/mcpClient.js';
+import { callTool, initializeClient, type McpClient, startMcpServer } from './helpers/mcpClient.js';
 
 const PRELOAD = fileURLToPath(new URL('./helpers/nockPreload.mjs', import.meta.url));
 const VALID_WORKOUT_UUID = '11111111-1111-4111-8111-111111111111';

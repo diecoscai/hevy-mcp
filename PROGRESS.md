@@ -10,8 +10,8 @@ writes, tests, lint, and CI. Final tool count: **22** (current 18 + 4 new
 body_measurements tools).
 
 ## Status
-- [ ] Phase A — Hardening  (not started)
-- [ ] Phase B — Publication (blocked on Phase A)
+- [x] Phase A — Hardening  (complete)
+- [ ] Phase B — Publication (builder work complete; awaiting user-gated B14 + B15)
 
 ---
 
@@ -161,10 +161,10 @@ Items are ordered by dependency — do not reorder.
 Branch: `feat/publication`. Builder does everything up to publish; the user
 runs the two user-gated publish commands at the end.
 
-- [ ] **B1 — User confirms npm name.** Default `@diecoscai/hevy-mcp` (scoped,
+- [x] **B1 — User confirms npm name.** Default `@diecoscai/hevy-mcp` (scoped,
       since `hevy-mcp` unscoped is taken by chrisdoc/hevy-mcp on npm — 150
       releases, active). No action required if user accepts default.
-- [ ] **B2 — `package.json` polish.** Set `name: "@diecoscai/hevy-mcp"`,
+- [x] **B2 — `package.json` polish.** Set `name: "@diecoscai/hevy-mcp"`,
       `version: "0.1.0"`, `description`, `bin: { "hevy-mcp":
       "dist/index.js" }`, `files: ["dist/**", "README.md", "LICENSE",
       "CHANGELOG.md"]`, `prepublishOnly: "npm run build"`,
@@ -173,42 +173,42 @@ runs the two user-gated publish commands at the end.
       `homepage`, `bugs`, `author: "Diego Iscai <diecoscai@gmail.com>"`,
       `license: "MIT"`, `engines: { node: ">=20" }`,
       `mcpName: "io.github.diecoscai/hevy-mcp"`. (Depends on B1.)
-- [ ] **B3 — Shebang.** First line of `src/index.ts` becomes
+- [x] **B3 — Shebang.** First line of `src/index.ts` becomes
       `#!/usr/bin/env node`. Ensure `tsc` preserves it (banner config if
       needed), and `chmod +x dist/index.js` in the build step.
-- [ ] **B4 — Full `README.md`.** ≤ 600 lines, English only. Sections:
+- [x] **B4 — Full `README.md`.** ≤ 600 lines, English only. Sections:
       overview, features, install (`npx @diecoscai/hevy-mcp`), getting a
       Hevy Pro API key, 4 per-client config blocks (Claude Desktop, Claude
       Code CLI, Cursor, VS Code MCP), env vars (`HEVY_API_KEY`,
       `HEVY_MCP_ALLOW_WRITES`), complete 22-tool reference, dry-run note,
       dev setup, registry link, license.
-- [ ] **B5 — Overflow docs.** `docs/tools.md` (full tool reference with
+- [x] **B5 — Overflow docs.** `docs/tools.md` (full tool reference with
       schemas + examples), `docs/configuration.md` (client wiring details),
       `docs/examples.md` (common prompts/flows), `docs/security.md`
       (dry-run, no-DELETE, PRO-only key, CORS, rate limits).
-- [ ] **B6 — `CHANGELOG.md`** following Keep-a-Changelog; seed entry for
+- [x] **B6 — `CHANGELOG.md`** following Keep-a-Changelog; seed entry for
       `0.1.0` with added/changed/fixed bullets covering the Phase A work.
-- [ ] **B7 — `CONTRIBUTING.md`** with dev setup, how to run MCP Inspector,
+- [x] **B7 — `CONTRIBUTING.md`** with dev setup, how to run MCP Inspector,
       how to add a tool (validate.ts schema → handler → description →
       test).
-- [ ] **B8 — `.github/workflows/ci.yml`.** Matrix Node 20 + 22. Steps:
+- [x] **B8 — `.github/workflows/ci.yml`.** Matrix Node 20 + 22. Steps:
       checkout, setup-node, `npm ci`, `npm run build`, `npm run lint`,
       `npm test`. Trigger: push + PR to `main`.
-- [ ] **B9 — `.github/workflows/release.yml`.** Trigger on tag `v*.*.*`.
+- [x] **B9 — `.github/workflows/release.yml`.** Trigger on tag `v*.*.*`.
       Steps: checkout, setup-node with `registry-url:
       'https://registry.npmjs.org'`, `npm ci`, `npm run build`,
       `npm publish --access public` using `${{ secrets.NPM_TOKEN }}`.
-- [ ] **B10 — Inspector script.** `package.json` →
+- [x] **B10 — Inspector script.** `package.json` →
       `"inspect": "npx @modelcontextprotocol/inspector node dist/index.js"`.
-- [ ] **B11 — `server.json`** at repo root. Schema
+- [x] **B11 — `server.json`** at repo root. Schema
       `https://static.modelcontextprotocol.io/schemas/2025-07-09/server.schema.json`,
       `name: "io.github.diecoscai/hevy-mcp"`, version tracks `package.json`,
       description, single stdio package entry pointing at
       `@diecoscai/hevy-mcp` on npm.
-- [ ] **B12 — `npm pack --dry-run` audit.** Confirm the tarball lists only
+- [x] **B12 — `npm pack --dry-run` audit.** Confirm the tarball lists only
       `dist/**`, `README.md`, `LICENSE`, `CHANGELOG.md`, `package.json`.
       No `tests/`, no `src/`, no `.github/`.
-- [ ] **B13 — Update `~/.claude/commands/hevy.md`** to reflect the 22 tools
+- [x] **B13 — Update `~/.claude/commands/hevy.md`** to reflect the 22 tools
       and link to the public `@diecoscai/hevy-mcp` package.
 - [ ] **B14 — User-gated: npm alpha publish.** User runs
       `npm publish --access public` with `version: "0.1.0-alpha.1"` and
