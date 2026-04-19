@@ -17,9 +17,32 @@ export interface McpClient {
   close: () => void;
 }
 
-export function startMcpServer(env: NodeJS.ProcessEnv = {}): McpClient {
+export interface StartOptions {
+  env?: NodeJS.ProcessEnv;
+  preload?: string;
+  fixtures?: Array<{
+    method: 'GET' | 'POST' | 'PUT';
+    pathRegex: string;
+    status: number;
+    body: unknown;
+  }>;
+}
+
+export function startMcpServer(opts: StartOptions | NodeJS.ProcessEnv = {}): McpClient {
+  const options: StartOptions =
+    'env' in opts || 'preload' in opts || 'fixtures' in opts
+      ? (opts as StartOptions)
+      : { env: opts as NodeJS.ProcessEnv };
+  const childEnv: NodeJS.ProcessEnv = { ...process.env, ...options.env };
+  if (options.fixtures) {
+    childEnv.HEVY_TEST_FIXTURES = JSON.stringify(options.fixtures);
+  }
+  if (options.preload) {
+    const existing = childEnv.NODE_OPTIONS ? `${childEnv.NODE_OPTIONS} ` : '';
+    childEnv.NODE_OPTIONS = `${existing}--import=${options.preload}`;
+  }
   const proc = spawn('node', ['dist/index.js'], {
-    env: { ...process.env, ...env },
+    env: childEnv,
     stdio: ['pipe', 'pipe', 'pipe'],
   });
 
