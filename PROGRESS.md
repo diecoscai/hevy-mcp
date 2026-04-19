@@ -114,11 +114,11 @@ Items are ordered by dependency — do not reorder.
       && npm test && npm run lint`, then spawn `node dist/index.js`, send
       `initialize` + `tools/list`, assert `tools.length === 22` and every
       `inputSchema` validates under `ajv` as JSON Schema Draft 2020-12.
-- [ ] **A18 — QA: unit tests.** `tests/validate.test.ts` covering happy
+- [x] **A18 — QA: unit tests.** `tests/validate.test.ts` covering happy
       paths + negative probes (oversized title, unknown field, bad enum,
       `pageSize=11`, malformed date, RPE=11, unknown set type). Target
       ≥ 80% line coverage on `src/validate.ts` and `src/errors.ts`.
-- [ ] **A19 — QA: integration tests.** `tests/integration/*.test.ts`
+- [x] **A19 — QA: integration tests.** `tests/integration/*.test.ts`
       reading real `api.hevyapp.com` when `HEVY_API_KEY` is set (skip
       otherwise). Writes intercepted with `nock`. Covers: `get_user_info`,
       `list_workouts`, `get_workout`, `list_body_measurements`.
