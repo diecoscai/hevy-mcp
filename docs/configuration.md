@@ -125,11 +125,11 @@ After editing the file, restart Cursor. Check the MCP status icon in the sidebar
 
 ## VS Code
 
-The [MCP extension](https://marketplace.visualstudio.com/search?term=mcp) reads `mcp.servers` from your user or workspace `settings.json`:
+VS Code 1.102+ ships native MCP support. Create `.vscode/mcp.json` at the root of your workspace (or use the user-level `mcp.json` supported by your VS Code build):
 
 ```json
 {
-  "mcp.servers": {
+  "servers": {
     "hevy": {
       "command": "npx",
       "args": ["-y", "@diecoscai/hevy-mcp"],
@@ -141,7 +141,7 @@ The [MCP extension](https://marketplace.visualstudio.com/search?term=mcp) reads 
 }
 ```
 
-Use the command palette (`MCP: Restart servers`) after editing.
+Drop the `env` block if you've run `npx @diecoscai/hevy-mcp setup` and the config file is on disk. Use the command palette (`MCP: Restart servers`) after editing. For older VS Code builds using a third-party MCP extension, consult the extension's README — the config shape it expects may differ from the native `.vscode/mcp.json` format above.
 
 ---
 

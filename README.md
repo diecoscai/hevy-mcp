@@ -16,7 +16,11 @@ Design goals:
 - **Validated at the edge.** Every tool input is checked with [Zod](https://zod.dev/) before a single byte crosses the network. Oversized titles, unknown fields, out-of-range page sizes, and invalid enums fail fast with [SEP-1303](https://modelcontextprotocol.io/seps/1303-input-validation-errors-as-tool-execution-errors.md)-shaped errors the model can self-correct.
 - **First-run friendly.** `npx @diecoscai/hevy-mcp setup` prompts for your API key, probes `GET /v1/user/info`, and stores the key at `$XDG_CONFIG_HOME/hevy-mcp/config.json` (mode `0600`).
 
-Requires a Hevy Pro subscription (the public API is a Pro feature). Grab a key at <https://hevy.com/settings?developer>.
+## Prerequisites
+
+- **Node.js 20 or later** (`node --version`).
+- A **Hevy Pro subscription** — the public API is a Pro feature.
+- A Hevy API key from <https://hevy.com/settings?developer>.
 
 ## Quick setup
 
@@ -28,11 +32,15 @@ The setup wizard:
 
 1. Prints the Hevy API key URL.
 2. Prompts for the key (UUID v4).
-3. Probes `GET /v1/user/info` to confirm the key works (retries up to 3 times).
+3. Probes `GET /v1/user/info` to confirm the key works (retries up to 3 times; after 3 failures it exits without lockout — just rerun).
 4. Writes `$XDG_CONFIG_HOME/hevy-mcp/config.json` with mode `0600` (falls back to `~/.config/hevy-mcp/config.json`).
 5. Refuses to overwrite an existing config without `y/N` confirmation.
 
 Afterwards, any MCP client that launches `npx -y @diecoscai/hevy-mcp` will pick up the stored key automatically. If you prefer to keep the key out of the filesystem, export `HEVY_API_KEY=<uuid>` in the environment that spawns the server — the env var takes precedence over the config file.
+
+> **Note on bare invocation.** Running `npx @diecoscai/hevy-mcp` with no arguments starts a stdio MCP server and blocks, waiting for an MCP client to connect over its stdin/stdout. You don't run it in a terminal yourself — your MCP client spawns it. Use `npx @diecoscai/hevy-mcp --help` or `--version` if you want a non-blocking invocation.
+
+> **Write tools are dry-run by default.** The first time you ask the server to create or update anything (a workout, a routine, a body measurement) you'll see a preview payload, not a real change. Set `HEVY_MCP_ALLOW_WRITES=1` to execute writes — see [Safety](#safety--dry-run-writes).
 
 ## Configuration
 
@@ -47,7 +55,7 @@ Config path:
 
 - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
-- Linux: `~/.config/Claude/claude_desktop_config.json`
+- Linux: `~/.config/Claude/claude_desktop_config.json` *(Anthropic does not ship an official Linux build of Claude Desktop as of 2026; the path applies only to unofficial community builds.)*
 
 Stored config (preferred):
 
@@ -115,13 +123,13 @@ Stored config:
 
 Inline env is identical in shape to Claude Desktop.
 
-### VS Code (MCP extension)
+### VS Code (native MCP support, 1.102+)
 
-Add an entry to your workspace or user `settings.json`:
+Create `.vscode/mcp.json` at the root of your workspace (or put the same shape under a user-level MCP config if your VS Code build supports one):
 
 ```json
 {
-  "mcp.servers": {
+  "servers": {
     "hevy": {
       "command": "npx",
       "args": ["-y", "@diecoscai/hevy-mcp"]
@@ -130,9 +138,9 @@ Add an entry to your workspace or user `settings.json`:
 }
 ```
 
-For inline creds, add `"env": { "HEVY_API_KEY": "..." }` alongside `args`.
+For inline creds, add `"env": { "HEVY_API_KEY": "..." }` alongside `args`. If you use a third-party MCP extension that expects a different shape, check its docs — VS Code's native MCP integration landed in 1.102.
 
-See [`docs/configuration.md`](./docs/configuration.md) for troubleshooting and client-specific notes.
+See [`docs/configuration.md`](./docs/configuration.md) for troubleshooting and client-specific notes, and [`docs/examples.md`](./docs/examples.md) for end-to-end flows you can run with a connected MCP client.
 
 ## Safety — dry-run writes
 
