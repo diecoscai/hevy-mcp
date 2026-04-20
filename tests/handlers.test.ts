@@ -298,4 +298,180 @@ describe('tool handlers via mocked fetch (subprocess + nock preload)', () => {
     const payload = JSON.parse(afterWrite.content[0].text) as { error_code: string };
     expect(payload.error_code).toBe('UPSTREAM_ERROR');
   });
+
+  it('hevy_search_exercise_templates paginates the full catalog on first call and filters by title', async () => {
+    client = startMcpServer({
+      env: { HEVY_API_KEY: 'test-key' },
+      preload: PRELOAD,
+      fixtures: [
+        {
+          method: 'GET',
+          pathRegex: '^/v1/exercise_templates\\?page=1&pageSize=100$',
+          status: 200,
+          body: {
+            page: 1,
+            page_count: 2,
+            exercise_templates: [
+              { id: 'AAAAAAAA', title: 'Bench Press', primary_muscle_group: 'chest' },
+              { id: 'BBBBBBBB', title: 'Squat', primary_muscle_group: 'quadriceps' },
+            ],
+          },
+        },
+        {
+          method: 'GET',
+          pathRegex: '^/v1/exercise_templates\\?page=2&pageSize=100$',
+          status: 200,
+          body: {
+            page: 2,
+            page_count: 2,
+            exercise_templates: [
+              { id: 'CCCCCCCC', title: 'Incline Bench Press', primary_muscle_group: 'chest' },
+              { id: 'DDDDDDDD', title: 'Deadlift', primary_muscle_group: 'hamstrings' },
+            ],
+          },
+        },
+      ],
+    });
+    await initializeClient(client);
+    const result = await callTool(client, 'hevy_search_exercise_templates', { query: 'bench' });
+    expect(result.isError).toBeFalsy();
+    const parsed = JSON.parse(result.content[0].text) as {
+      match_count: number;
+      exercise_templates: Array<{ id: string; title: string }>;
+    };
+    expect(parsed.match_count).toBe(2);
+    expect(parsed.exercise_templates.map((t) => t.id).sort()).toEqual(['AAAAAAAA', 'CCCCCCCC']);
+  });
+
+  it('hevy_search_exercise_templates applies the primaryMuscleGroup filter on top of the title match', async () => {
+    client = startMcpServer({
+      env: { HEVY_API_KEY: 'test-key' },
+      preload: PRELOAD,
+      fixtures: [
+        {
+          method: 'GET',
+          pathRegex: '^/v1/exercise_templates\\?page=1&pageSize=100$',
+          status: 200,
+          body: {
+            page: 1,
+            page_count: 1,
+            exercise_templates: [
+              { id: '11111111', title: 'Shoulder Press', primary_muscle_group: 'shoulders' },
+              { id: '22222222', title: 'Leg Press', primary_muscle_group: 'quadriceps' },
+            ],
+          },
+        },
+      ],
+    });
+    await initializeClient(client);
+    const result = await callTool(client, 'hevy_search_exercise_templates', {
+      query: 'press',
+      primaryMuscleGroup: 'shoulders',
+    });
+    expect(result.isError).toBeFalsy();
+    const parsed = JSON.parse(result.content[0].text) as {
+      exercise_templates: Array<{ id: string }>;
+    };
+    expect(parsed.exercise_templates).toHaveLength(1);
+    expect(parsed.exercise_templates[0].id).toBe('11111111');
+  });
+
+  it('hevy_search_exercise_templates reuses the full-catalog cache on subsequent searches (single paginate consumed)', async () => {
+    // Only ONE page-1 fixture; the second search with a different query must
+    // be served from cache. If the handler re-paginates, NetConnect kicks in
+    // and the assertion fails.
+    client = startMcpServer({
+      env: { HEVY_API_KEY: 'test-key' },
+      preload: PRELOAD,
+      fixtures: [
+        {
+          method: 'GET',
+          pathRegex: '^/v1/exercise_templates\\?page=1&pageSize=100$',
+          status: 200,
+          body: {
+            page: 1,
+            page_count: 1,
+            exercise_templates: [
+              { id: '11111111', title: 'Bench Press', primary_muscle_group: 'chest' },
+              { id: '22222222', title: 'Pull Up', primary_muscle_group: 'lats' },
+            ],
+          },
+        },
+      ],
+    });
+    await initializeClient(client);
+    const first = await callTool(client, 'hevy_search_exercise_templates', { query: 'bench' });
+    expect(first.isError).toBeFalsy();
+    const second = await callTool(client, 'hevy_search_exercise_templates', { query: 'pull' });
+    expect(second.isError).toBeFalsy();
+    const parsed = JSON.parse(second.content[0].text) as {
+      exercise_templates: Array<{ id: string }>;
+    };
+    expect(parsed.exercise_templates).toHaveLength(1);
+    expect(parsed.exercise_templates[0].id).toBe('22222222');
+  });
+
+  it('hevy_search_exercise_templates populates the per-id cache so hevy_get_exercise_template hits it', async () => {
+    // Fixtures: ONE page-1 for the search. No individual get-by-id fixture —
+    // if get_exercise_template doesn't hit the cache populated by search, it
+    // falls through to NetConnect and errors.
+    client = startMcpServer({
+      env: { HEVY_API_KEY: 'test-key' },
+      preload: PRELOAD,
+      fixtures: [
+        {
+          method: 'GET',
+          pathRegex: '^/v1/exercise_templates\\?page=1&pageSize=100$',
+          status: 200,
+          body: {
+            page: 1,
+            page_count: 1,
+            exercise_templates: [{ id: 'ABCDEF12', title: 'Test', primary_muscle_group: 'chest' }],
+          },
+        },
+      ],
+    });
+    await initializeClient(client);
+    const search = await callTool(client, 'hevy_search_exercise_templates', { query: 'test' });
+    expect(search.isError).toBeFalsy();
+    const getOne = await callTool(client, 'hevy_get_exercise_template', {
+      exerciseTemplateId: 'ABCDEF12',
+    });
+    expect(getOne.isError).toBeFalsy();
+    const parsed = JSON.parse(getOne.content[0].text) as { id: string; title: string };
+    expect(parsed.id).toBe('ABCDEF12');
+    expect(parsed.title).toBe('Test');
+  });
+
+  it('hevy_search_exercise_templates with refresh:true re-paginates the catalog', async () => {
+    // First search primes the cache. Second search with refresh:true expects
+    // to re-fetch — only ONE page-1 fixture exists total, so the refresh
+    // call must error (NetConnect) to prove the cache was bypassed.
+    client = startMcpServer({
+      env: { HEVY_API_KEY: 'test-key' },
+      preload: PRELOAD,
+      fixtures: [
+        {
+          method: 'GET',
+          pathRegex: '^/v1/exercise_templates\\?page=1&pageSize=100$',
+          status: 200,
+          body: {
+            page: 1,
+            page_count: 1,
+            exercise_templates: [{ id: '11111111', title: 'A', primary_muscle_group: 'chest' }],
+          },
+        },
+      ],
+    });
+    await initializeClient(client);
+    const primed = await callTool(client, 'hevy_search_exercise_templates', { query: 'a' });
+    expect(primed.isError).toBeFalsy();
+    const refreshed = await callTool(client, 'hevy_search_exercise_templates', {
+      query: 'a',
+      refresh: true,
+    });
+    expect(refreshed.isError).toBe(true);
+    const payload = JSON.parse(refreshed.content[0].text) as { error_code: string };
+    expect(payload.error_code).toBe('UPSTREAM_ERROR');
+  });
 });

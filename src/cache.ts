@@ -78,3 +78,4 @@ export function templateOneKey(id: string): string {
 }
 
 export const TEMPLATE_LIST_PREFIX = 'list:';
+export const TEMPLATE_ALL_KEY = 'all:templates';

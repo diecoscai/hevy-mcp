@@ -132,7 +132,7 @@ The Hevy API has **no `DELETE` endpoint** on any resource. A bad write cannot be
 
 ## Tool reference (summary)
 
-The server exposes 22 tools grouped by resource. See [`docs/tools.md`](./docs/tools.md) for input schemas and examples.
+The server exposes 23 tools grouped by resource. See [`docs/tools.md`](./docs/tools.md) for input schemas and examples.
 
 ### User
 
@@ -174,6 +174,7 @@ The server exposes 22 tools grouped by resource. See [`docs/tools.md`](./docs/to
 | --- | --- |
 | `hevy_list_exercise_templates` | Paginated exercise library — the only list that accepts `pageSize` up to 100. |
 | `hevy_get_exercise_template` | Fetch one template by id (8-char hex for built-ins, UUID for custom). |
+| `hevy_search_exercise_templates` | Substring search over the full template catalog with optional muscle-group filter. First call paginates + caches; subsequent searches are in-memory. |
 | `hevy_create_exercise_template` | Create a custom exercise (write — dry-run default). |
 | `hevy_get_exercise_history` | All logged sets for a given exercise template. |
 
@@ -197,16 +198,22 @@ The server exposes 22 tools grouped by resource. See [`docs/tools.md`](./docs/to
 
 ## Exercise-template cache
 
-`hevy_list_exercise_templates` and `hevy_get_exercise_template` read through a
-per-process in-memory cache (Map with per-entry TTL, default 1 hour). The
-template catalog is large and near-static within a session, so repeated
-resolution — e.g. looking up an id while building a routine — costs one HTTP
-round-trip instead of many.
+`hevy_list_exercise_templates`, `hevy_get_exercise_template`, and
+`hevy_search_exercise_templates` read through a per-process in-memory cache
+(Map with per-entry TTL, default 1 hour). The template catalog is large and
+near-static within a session, so repeated resolution — e.g. looking up an id
+while building a routine, or running several substring searches — costs one
+full paginate instead of many.
 
-`hevy_create_exercise_template` invalidates the list portion of the cache on a
-successful write; singleton template entries are left alone (they can't be
-made stale by creating a different custom template). The cache is never
-persisted across processes.
+`hevy_search_exercise_templates` fetches the full catalog once (`pageSize=100`,
+iterates `page_count`), populates both the per-id cache and a consolidated
+"all" entry, dedupes concurrent fetches with an in-flight promise, then filters
+locally. Pass `refresh: true` to bust the cache and re-fetch.
+
+`hevy_create_exercise_template` invalidates every paginated list entry and the
+consolidated "all" entry on a successful write; singleton template entries are
+left alone (they can't be made stale by creating a different custom template).
+The cache is never persisted across processes.
 
 Disable the cache entirely with `HEVY_MCP_DISABLE_CACHE=1`, or shorten / lengthen
 its lifetime with `HEVY_MCP_CACHE_TTL_SECONDS`.

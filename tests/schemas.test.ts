@@ -13,7 +13,7 @@ const require = createRequire(import.meta.url);
 const pkg = require('../package.json') as { name: string; version: string };
 
 const SEP986_TOOL_NAME = /^[a-zA-Z0-9_\-./]+$/;
-const EXPECTED_TOOL_COUNT = 22;
+const EXPECTED_TOOL_COUNT = 23;
 
 describe('MCP schema conformance', () => {
   let client: McpClient;
@@ -29,7 +29,7 @@ describe('MCP schema conformance', () => {
     client?.close();
   });
 
-  it('advertises exactly 22 tools', () => {
+  it('advertises exactly 23 tools', () => {
     expect(tools.length).toBe(EXPECTED_TOOL_COUNT);
   });
 
