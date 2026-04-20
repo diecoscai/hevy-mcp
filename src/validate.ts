@@ -259,6 +259,14 @@ const schemas = {
   hevy_get_exercise_template: z.object({ exerciseTemplateId: exerciseTemplateIdSchema }).strict(),
   hevy_create_exercise_template: z.object({ exercise: exerciseTemplateCreateSchema }).strict(),
 
+  hevy_search_exercise_templates: z
+    .object({
+      query: z.string().min(1).max(255),
+      primaryMuscleGroup: muscleGroupSchema.optional(),
+      refresh: z.boolean().optional(),
+    })
+    .strict(),
+
   hevy_get_exercise_history: z
     .object({
       exerciseTemplateId: exerciseTemplateIdSchema,

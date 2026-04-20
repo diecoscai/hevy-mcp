@@ -10,6 +10,7 @@ import {
 import {
   createTemplateCache,
   isCacheDisabled,
+  TEMPLATE_ALL_KEY,
   TEMPLATE_LIST_PREFIX,
   type TtlCache,
   templateListKey,
@@ -26,6 +27,19 @@ const BASE_URL = 'https://api.hevyapp.com';
 const ALLOW_WRITES = process.env.HEVY_MCP_ALLOW_WRITES === '1';
 const CACHE_DISABLED = isCacheDisabled();
 const templateCache: TtlCache<unknown> | null = CACHE_DISABLED ? null : createTemplateCache();
+let allTemplatesInFlight: Promise<unknown[]> | null = null;
+
+interface TemplateListPage {
+  page: number;
+  page_count: number;
+  exercise_templates: unknown[];
+}
+
+interface TemplateLite {
+  id?: string;
+  title?: string;
+  primary_muscle_group?: string;
+}
 
 let API_KEY = '';
 
@@ -431,6 +445,33 @@ const TOOLS: Tool[] = [
   },
 
   {
+    name: 'hevy_search_exercise_templates',
+    description:
+      'Case-insensitive substring search over ALL exercise templates (built-in + custom) with an optional primary muscle group filter. First call paginates the full catalog once (pageSize=100) and caches it in-memory for the process; subsequent searches filter the cache locally. Pass `refresh: true` to bust the cache and re-fetch. Returns a bare array of matching templates (no pagination envelope). Cache TTL honours HEVY_MCP_CACHE_TTL_SECONDS; fully disabled with HEVY_MCP_DISABLE_CACHE=1.',
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['query'],
+      properties: {
+        query: {
+          type: 'string',
+          minLength: 1,
+          description: 'Case-insensitive substring matched against the template title.',
+        },
+        primaryMuscleGroup: {
+          type: 'string',
+          enum: muscleGroupEnum,
+          description: 'Optional filter — exact match on the primary muscle group.',
+        },
+        refresh: {
+          type: 'boolean',
+          description: 'Force a full re-fetch of the catalog before filtering (default false).',
+        },
+      },
+    },
+  },
+
+  {
     name: 'hevy_get_exercise_history',
     description:
       'List every logged set for the given exercise template (one row per set, includes warmups/dropsets/failures). pageSize 1-10.',
@@ -634,7 +675,61 @@ async function dispatch(name: string, rawArgs: unknown): Promise<unknown> {
         body: JSON.stringify(body),
       });
       templateCache?.invalidatePrefix(TEMPLATE_LIST_PREFIX);
+      templateCache?.invalidatePrefix(TEMPLATE_ALL_KEY);
       return res;
+    }
+
+    case 'hevy_search_exercise_templates': {
+      const args = validateInput(name, rawArgs);
+      const queryLower = args.query.toLowerCase();
+      let all: unknown[] | undefined;
+
+      if (!args.refresh) {
+        all = templateCache?.get(TEMPLATE_ALL_KEY) as unknown[] | undefined;
+      }
+
+      if (!all) {
+        if (args.refresh || !allTemplatesInFlight) {
+          if (args.refresh) templateCache?.invalidatePrefix(TEMPLATE_ALL_KEY);
+          allTemplatesInFlight = (async () => {
+            const collected: unknown[] = [];
+            let page = 1;
+            let pageCount = 1;
+            do {
+              const data = (await hevyFetch(
+                `/v1/exercise_templates?page=${page}&pageSize=100`
+              )) as TemplateListPage;
+              const templates = data.exercise_templates ?? [];
+              collected.push(...templates);
+              pageCount = data.page_count ?? 1;
+              page++;
+            } while (page <= pageCount);
+            for (const raw of collected) {
+              const t = raw as TemplateLite;
+              if (typeof t.id === 'string') {
+                templateCache?.set(templateOneKey(t.id), raw);
+              }
+            }
+            templateCache?.set(TEMPLATE_ALL_KEY, collected);
+            return collected;
+          })().finally(() => {
+            allTemplatesInFlight = null;
+          });
+        }
+        all = await allTemplatesInFlight;
+      }
+
+      const filtered = all.filter((raw) => {
+        const t = raw as TemplateLite;
+        if (typeof t.title !== 'string') return false;
+        if (!t.title.toLowerCase().includes(queryLower)) return false;
+        if (args.primaryMuscleGroup && t.primary_muscle_group !== args.primaryMuscleGroup) {
+          return false;
+        }
+        return true;
+      });
+
+      return { exercise_templates: filtered, match_count: filtered.length };
     }
 
     case 'hevy_get_exercise_history': {

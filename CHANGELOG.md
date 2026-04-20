@@ -6,6 +6,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+
+- `hevy_search_exercise_templates`: substring search over the full template
+  catalog with optional primary-muscle-group filter. First call paginates the
+  catalog once (pageSize=100, iterates page_count), dedupes concurrent fetches
+  with an in-flight promise, and caches the result in the existing template
+  cache. Subsequent searches filter in-memory. `refresh: true` forces a
+  re-fetch. Also populates per-id cache entries as a side-effect so
+  `hevy_get_exercise_template` lookups after a search are free.
+
 ## [0.2.0] - 2026-04-19
 
 ### Added

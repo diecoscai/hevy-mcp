@@ -234,6 +234,27 @@ The server always inserts new folders at index 0.
 
 `GET /v1/exercise_templates/{id}`.
 
+### `hevy_search_exercise_templates`
+
+Client-side search over the full catalog. Not a Hevy API endpoint — the
+handler fetches every page once (`pageSize=100`), caches the result in
+memory, then filters locally. Cheap to call repeatedly.
+
+```json
+{
+  "query": "bench",
+  "primaryMuscleGroup": "chest",
+  "refresh": false
+}
+```
+
+Returns `{ exercise_templates: [...], match_count: N }`. `primaryMuscleGroup`
+is optional and must be one of the 20 muscle-group enum values. Set `refresh: true`
+to bust the cache and re-paginate.
+
+Cache TTL follows `HEVY_MCP_CACHE_TTL_SECONDS` (default 3600s). Disable entirely
+with `HEVY_MCP_DISABLE_CACHE=1` — every search will then re-paginate.
+
 ### `hevy_create_exercise_template`
 
 `POST /v1/exercise_templates`. Write — dry-run default. `title ≤ 100`.
