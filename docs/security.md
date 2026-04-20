@@ -5,9 +5,10 @@ Threat model and operational notes for running `@diecoscai/hevy-mcp` in real cli
 ## What the server does
 
 - Opens a stdio channel to the parent MCP client.
-- Reads the Hevy API key from `HEVY_API_KEY` or `$XDG_CONFIG_HOME/hevy-mcp/config.json`.
+- Reads the Hevy API key from the `HEVY_API_KEY` environment variable (typically passed through your MCP client's `env` block).
 - Makes HTTPS requests to `api.hevyapp.com/v1/*` endpoints documented in the public Hevy API.
 - Returns the responses to the client verbatim (plus a SEP-1303 error envelope on failure).
+- Writes nothing to disk — no config file, no cache, no logs.
 
 ## What the server never does
 
@@ -18,24 +19,23 @@ Threat model and operational notes for running `@diecoscai/hevy-mcp` in real cli
 
 ## Key handling
 
-- The API key is treated as a secret. Nothing in the server ever logs it; error envelopes include a status code and Hevy's response body but never the api-key header.
-- The stored-config path is `$XDG_CONFIG_HOME/hevy-mcp/config.json` with mode `0600` (directory `0700`). The setup flow creates both if missing.
-- The env-var path (`HEVY_API_KEY`) is preferred when the key should only live in a client's config (e.g. Claude Desktop's `env` block) and never touch disk.
+- The API key is treated as a secret. Nothing in the server ever logs it; error envelopes include the response status code and Hevy's response body but never the `api-key` header.
+- The server does not create, read, or cache a credentials file. The only place the key exists on disk is your MCP client's own config (which you control).
 
 ### Rotation on leak
 
 1. Revoke the key in the Hevy app: Settings → Developer → "Revoke".
 2. Generate a new key in the same screen.
-3. Run `npx @diecoscai/hevy-mcp setup` and answer `y` to overwrite.
-4. Restart the MCP client so it picks up the new file (or update the `env` block).
+3. Replace the `HEVY_API_KEY` value in your MCP client's config file.
+4. Restart the client so it re-spawns the server with the new env.
 
 Key rotation is effectively instantaneous — Hevy's validation reads from a cache that clears on the next request.
 
 ### Per-client considerations
 
-- **Claude Desktop / Cursor / VS Code** — the config file lives on the user's machine. Any process running as the same user can read it. Avoid committing `config.json` to dotfile repos; mode `0600` is not a substitute for "don't share this directory".
-- **Claude Code CLI** — keys passed via `--env HEVY_API_KEY=...` appear in the shell history and in `ps aux` while the process is running. Prefer the stored-config flow on shared machines.
-- **CI environments** — use environment secrets (`HEVY_API_KEY` as a GitHub Actions secret, for example). Do not commit a `config.json`.
+- **Claude Desktop / Cursor / VS Code** — the key lives in the client's JSON config file (`claude_desktop_config.json`, `~/.cursor/mcp.json`, `.vscode/mcp.json`). Treat those files as sensitive; avoid committing them to dotfile repos.
+- **Claude Code CLI** — keys passed via `--env HEVY_API_KEY=...` appear in the shell history and in `ps aux` while the process is running. On shared machines, register the server via a stored client config instead of the CLI flag.
+- **CI environments** — use environment secrets (`HEVY_API_KEY` as a GitHub Actions secret, for example). Never inline the key in a committed workflow.
 
 ## Dry-run default
 

@@ -12,19 +12,13 @@ All MCP clients launch the server as a stdio subprocess. The recommended invocat
 
 ### Where does the API key come from?
 
-Precedence (first match wins):
+Authentication is a single environment variable — `HEVY_API_KEY` — passed through your MCP client's `env` block. If it is missing or empty, the server exits with code `1` and an error that names the variable and the URL to generate a key.
 
-1. `HEVY_API_KEY` environment variable in the process that spawns the server.
-2. `$XDG_CONFIG_HOME/hevy-mcp/config.json` (mode `0600`).
-3. `~/.config/hevy-mcp/config.json` as a fallback when `XDG_CONFIG_HOME` is unset.
-
-If none of the above resolves to a non-empty string, the server exits with code `1` and a pointer to `npx @diecoscai/hevy-mcp setup`.
+There is no local config file, no wizard, and no cache. Rotating the key means editing your client config and restarting the client.
 
 ### Enabling writes
 
-The write-gate is **per-process**. Set `HEVY_MCP_ALLOW_WRITES=1` in the environment that spawns the server; without it, `POST` / `PUT` tools return a dry-run payload.
-
-For most clients, add it to the `env` block alongside `HEVY_API_KEY`.
+The write-gate is **per-process**. Set `HEVY_MCP_ALLOW_WRITES=1` in the same `env` block as `HEVY_API_KEY`; without it, `POST` / `PUT` tools return a dry-run payload.
 
 ---
 
@@ -34,24 +28,7 @@ Config path:
 
 - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
-- Linux: `~/.config/Claude/claude_desktop_config.json`
-
-### Preferred — stored config
-
-```json
-{
-  "mcpServers": {
-    "hevy": {
-      "command": "npx",
-      "args": ["-y", "@diecoscai/hevy-mcp"]
-    }
-  }
-}
-```
-
-Run `npx @diecoscai/hevy-mcp setup` once, then restart Claude Desktop. The 22 tools should appear in the tools panel. Call `hevy_get_user_info` to confirm the key works.
-
-### Inline env
+- Linux: `~/.config/Claude/claude_desktop_config.json` *(unofficial community builds only)*
 
 ```json
 {
@@ -60,7 +37,7 @@ Run `npx @diecoscai/hevy-mcp setup` once, then restart Claude Desktop. The 22 to
       "command": "npx",
       "args": ["-y", "@diecoscai/hevy-mcp"],
       "env": {
-        "HEVY_API_KEY": "00000000-0000-4000-8000-000000000000",
+        "HEVY_API_KEY": "PASTE_YOUR_KEY_HERE",
         "HEVY_MCP_ALLOW_WRITES": "1"
       }
     }
@@ -68,30 +45,25 @@ Run `npx @diecoscai/hevy-mcp setup` once, then restart Claude Desktop. The 22 to
 }
 ```
 
+Drop the `HEVY_MCP_ALLOW_WRITES` entry to keep writes in dry-run mode (recommended for first use).
+
 ### Troubleshooting
 
-- **"0 tools available"** — open the Claude Desktop logs (Help → Troubleshooting → Open logs). Look for `hevy-mcp running on stdio`. If missing, the server exited before stdio attach; the next line is usually the cause.
-- **"No Hevy API key found"** — run `npx @diecoscai/hevy-mcp setup` in a regular terminal (not within Claude Desktop's sandbox) and retry. The config file must be readable by the user Claude Desktop runs as.
+- **"0 tools available"** — open the Claude Desktop logs (Help → Troubleshooting → Open logs). Look for a line ending in ` running on stdio` (the full line starts with `@diecoscai/hevy-mcp@<version>`). If missing, the server exited before stdio attach; the next line is usually the cause.
+- **"No Hevy API key found"** — make sure `HEVY_API_KEY` is set in the `env` block of the server entry, not in a separate root-level `env` object. Restart Claude Desktop fully after editing.
 - **`npx` path mismatch on macOS** — Claude Desktop does not inherit your shell PATH. If `which npx` in Terminal points to a Homebrew-managed Node, use that absolute path in `command`.
 
 ---
 
 ## Claude Code CLI
 
-### Preferred — stored config
-
-```bash
-claude mcp add hevy -- npx -y @diecoscai/hevy-mcp
-```
-
-### Inline env
-
 ```bash
 claude mcp add hevy \
-  --env HEVY_API_KEY=00000000-0000-4000-8000-000000000000 \
-  --env HEVY_MCP_ALLOW_WRITES=1 \
+  --env HEVY_API_KEY=PASTE_YOUR_KEY_HERE \
   -- npx -y @diecoscai/hevy-mcp
 ```
+
+Append `--env HEVY_MCP_ALLOW_WRITES=1` to enable writes.
 
 Listing and removing:
 
@@ -113,7 +85,10 @@ Config path: `~/.cursor/mcp.json`.
   "mcpServers": {
     "hevy": {
       "command": "npx",
-      "args": ["-y", "@diecoscai/hevy-mcp"]
+      "args": ["-y", "@diecoscai/hevy-mcp"],
+      "env": {
+        "HEVY_API_KEY": "PASTE_YOUR_KEY_HERE"
+      }
     }
   }
 }
@@ -134,14 +109,14 @@ VS Code 1.102+ ships native MCP support. Create `.vscode/mcp.json` at the root o
       "command": "npx",
       "args": ["-y", "@diecoscai/hevy-mcp"],
       "env": {
-        "HEVY_API_KEY": "00000000-0000-4000-8000-000000000000"
+        "HEVY_API_KEY": "PASTE_YOUR_KEY_HERE"
       }
     }
   }
 }
 ```
 
-Drop the `env` block if you've run `npx @diecoscai/hevy-mcp setup` and the config file is on disk. Use the command palette (`MCP: Restart servers`) after editing. For older VS Code builds using a third-party MCP extension, consult the extension's README — the config shape it expects may differ from the native `.vscode/mcp.json` format above.
+Use the command palette (`MCP: Restart servers`) after editing. For older VS Code builds using a third-party MCP extension, consult the extension's README — the config shape it expects may differ from the native `.vscode/mcp.json` format above.
 
 ---
 
@@ -156,3 +131,13 @@ npm run inspect
 ```
 
 This launches `@modelcontextprotocol/inspector` against the compiled server and lets you invoke every tool by hand.
+
+## Upgrading
+
+`npx` caches packages; a new version on npm won't be picked up until the cache entry expires or you force a refresh:
+
+```bash
+npx -y @diecoscai/hevy-mcp@latest --version
+```
+
+Pin a specific version in the client config (`@diecoscai/hevy-mcp@0.1.0`) if reproducibility matters to you.

@@ -9,7 +9,6 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { MissingCredentialsError, resolveApiKey } from './config.js';
 import { dryRunResult, HevyApiError, toToolExecutionError, UnknownToolError } from './errors.js';
-import { runSetup } from './setup.js';
 import { isKnownTool, validateInput } from './validate.js';
 
 const require = createRequire(import.meta.url);
@@ -690,14 +689,14 @@ function printUsage() {
     '',
     'Usage:',
     '  npx @diecoscai/hevy-mcp           Start the MCP server on stdio.',
-    '  npx @diecoscai/hevy-mcp setup     Interactively store your Hevy API key.',
     '  npx @diecoscai/hevy-mcp --help    Show this help.',
     '  npx @diecoscai/hevy-mcp --version Show the installed version.',
     '',
     'Authentication:',
-    '  1. HEVY_API_KEY env var (takes precedence), or',
-    '  2. Config file at $XDG_CONFIG_HOME/hevy-mcp/config.json',
-    '     (falls back to ~/.config/hevy-mcp/config.json).',
+    '  Set the HEVY_API_KEY environment variable to a key from',
+    '  https://hevy.com/settings?developer. Typically you put it in',
+    '  your MCP client config (Claude Desktop, Cursor, etc.) under',
+    '  the "env" block of the server entry.',
     '',
     'Writes (POST/PUT) require HEVY_MCP_ALLOW_WRITES=1; otherwise they return a dry-run payload.',
   ];
@@ -706,8 +705,7 @@ function printUsage() {
 
 async function startServer() {
   try {
-    const { apiKey } = await resolveApiKey();
-    API_KEY = apiKey;
+    API_KEY = resolveApiKey();
   } catch (err) {
     if (err instanceof MissingCredentialsError) {
       console.error(err.message);
@@ -731,10 +729,6 @@ async function main() {
   if (cmd === '--version' || cmd === '-v') {
     console.log(`${pkg.name}@${pkg.version}`);
     return;
-  }
-  if (cmd === 'setup') {
-    const code = await runSetup();
-    process.exit(code);
   }
   if (cmd !== undefined) {
     console.error(`Unknown argument: ${cmd}`);

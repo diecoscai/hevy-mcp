@@ -17,9 +17,8 @@ Initial public release.
   routines (list / get / create / update), routine folders (list / get / create),
   exercise templates (list / get / create / get history), and body measurements
   (list / get / create / update).
-- First-run setup flow: `npx @diecoscai/hevy-mcp setup` prompts for the Hevy
-  Pro API key, probes `GET /v1/user/info` to validate it, and writes
-  `$XDG_CONFIG_HOME/hevy-mcp/config.json` with mode `0600`.
+- Single-env-var authentication: set `HEVY_API_KEY` in your MCP client's
+  `env` block and the server is ready. No config file, no cache, no wizard.
 - Dry-run writes by default. `POST` / `PUT` tools return a
   `{ dry_run: true, would_send: { ... } }` preview unless
   `HEVY_MCP_ALLOW_WRITES=1` is set.
@@ -33,8 +32,8 @@ Initial public release.
   failure: `{ isError: true, content: [{ type: 'text', text:
   JSON.stringify({ error_code, message, details?, hint? }) }] }`.
 - MCP Inspector integration via `npm run inspect`.
-- CLI commands: `--help`, `--version`, `setup`. Server version is read
-  from `package.json` at runtime rather than hardcoded.
+- CLI commands: `--help`, `--version`. Server version is read from
+  `package.json` at runtime rather than hardcoded.
 - README with copy-paste configuration snippets for Claude Desktop,
   Claude Code CLI, Cursor, and VS Code, plus overflow docs under
   `docs/` (tool reference, configuration, examples, security).
@@ -47,8 +46,8 @@ Initial public release.
 
 - Dry-run default prevents accidental writes to an API with no `DELETE`
   endpoint (no rollback possible from the client).
-- Stored config is `mode 0600` in a `mode 0700` directory; env-var path
-  (`HEVY_API_KEY`) avoids on-disk storage entirely.
+- The server writes nothing to disk — credentials live only in your MCP
+  client's config, where you already control access.
 - Bumped transitive `hono` to `4.12.14` to clear GHSA-458j-xx4x-4375
   (moderate: JSX SSR HTML injection). The SDK's peer range accepts the
   fix without a breaking bump.
