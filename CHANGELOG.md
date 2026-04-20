@@ -6,6 +6,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+
+- In-memory TTL cache for `hevy_list_exercise_templates` and
+  `hevy_get_exercise_template`. Default TTL 1h, opt-out via
+  `HEVY_MCP_DISABLE_CACHE=1`, custom TTL via `HEVY_MCP_CACHE_TTL_SECONDS`.
+  `hevy_create_exercise_template` invalidates the list portion of the
+  cache on success.
+- README sections documenting the cache and explaining the deliberate
+  absence of webhook tools.
+
 ## [0.1.0] - 2026-04-19
 
 Initial public release.

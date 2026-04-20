@@ -192,6 +192,41 @@ The server exposes 22 tools grouped by resource. See [`docs/tools.md`](./docs/to
 | --- | --- | --- |
 | `HEVY_API_KEY` | required | Hevy Pro API key (UUID v4). Typically passed through the `env` block of your MCP client config. |
 | `HEVY_MCP_ALLOW_WRITES` | optional | Set to `1` to enable real `POST` / `PUT` calls. Any other value (including unset) keeps dry-run on. |
+| `HEVY_MCP_DISABLE_CACHE` | optional | Set to `1` to disable the in-memory exercise-template cache (see below). |
+| `HEVY_MCP_CACHE_TTL_SECONDS` | optional | Cache TTL in seconds. Default `3600`. Ignored when the cache is disabled. |
+
+## Exercise-template cache
+
+`hevy_list_exercise_templates` and `hevy_get_exercise_template` read through a
+per-process in-memory cache (Map with per-entry TTL, default 1 hour). The
+template catalog is large and near-static within a session, so repeated
+resolution — e.g. looking up an id while building a routine — costs one HTTP
+round-trip instead of many.
+
+`hevy_create_exercise_template` invalidates the list portion of the cache on a
+successful write; singleton template entries are left alone (they can't be
+made stale by creating a different custom template). The cache is never
+persisted across processes.
+
+Disable the cache entirely with `HEVY_MCP_DISABLE_CACHE=1`, or shorten / lengthen
+its lifetime with `HEVY_MCP_CACHE_TTL_SECONDS`.
+
+## Webhooks — intentionally not exposed
+
+Hevy's public API (`api.hevyapp.com/v1/*`) does **not** document webhook
+subscriptions; the relevant endpoints live on the private web-session API
+(`/webhook-subscription`, `/subscribe_to_webhook`) which uses a different
+auth scheme (refresh-token bearer, not the `api-key` header this server
+uses). Exposing tools for them would either (a) ship handlers that throw
+"endpoint not available" to every user, or (b) force users to hand over a
+web session token just to register a URL.
+
+If you need incremental sync, use `hevy_get_workout_events` with a `since`
+timestamp — it covers both `updated` and `deleted` workouts and is the only
+mechanism the public API offers for change detection.
+
+If Hevy publishes webhooks in the public OpenAPI spec, subscription tools
+will land here with the same dry-run gate as the other writes.
 
 ## Development
 
