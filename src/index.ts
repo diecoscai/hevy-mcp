@@ -7,6 +7,14 @@ import {
   ListToolsRequestSchema,
   type Tool,
 } from '@modelcontextprotocol/sdk/types.js';
+import {
+  createTemplateCache,
+  isCacheDisabled,
+  TEMPLATE_LIST_PREFIX,
+  type TtlCache,
+  templateListKey,
+  templateOneKey,
+} from './cache.js';
 import { MissingCredentialsError, resolveApiKey } from './config.js';
 import { dryRunResult, HevyApiError, toToolExecutionError, UnknownToolError } from './errors.js';
 import { isKnownTool, validateInput } from './validate.js';
@@ -16,6 +24,8 @@ const pkg = require('../package.json') as { name: string; version: string };
 
 const BASE_URL = 'https://api.hevyapp.com';
 const ALLOW_WRITES = process.env.HEVY_MCP_ALLOW_WRITES === '1';
+const CACHE_DISABLED = isCacheDisabled();
+const templateCache: TtlCache<unknown> | null = CACHE_DISABLED ? null : createTemplateCache();
 
 let API_KEY = '';
 
@@ -598,18 +608,33 @@ async function dispatch(name: string, rawArgs: unknown): Promise<unknown> {
       const args = validateInput(name, rawArgs);
       const page = args.page ?? 1;
       const pageSize = args.pageSize ?? 10;
-      return hevyFetch(`/v1/exercise_templates?page=${page}&pageSize=${pageSize}`);
+      const key = templateListKey(page, pageSize);
+      const cached = templateCache?.get(key);
+      if (cached !== undefined) return cached;
+      const res = await hevyFetch(`/v1/exercise_templates?page=${page}&pageSize=${pageSize}`);
+      templateCache?.set(key, res);
+      return res;
     }
     case 'hevy_get_exercise_template': {
       const args = validateInput(name, rawArgs);
-      return hevyFetch(`/v1/exercise_templates/${args.exerciseTemplateId}`);
+      const key = templateOneKey(args.exerciseTemplateId);
+      const cached = templateCache?.get(key);
+      if (cached !== undefined) return cached;
+      const res = await hevyFetch(`/v1/exercise_templates/${args.exerciseTemplateId}`);
+      templateCache?.set(key, res);
+      return res;
     }
     case 'hevy_create_exercise_template': {
       const args = validateInput(name, rawArgs);
       const body = { exercise_template: args.exercise };
       const gate = guardWrite('POST', '/v1/exercise_templates', body);
       if (gate) return gate;
-      return hevyFetch('/v1/exercise_templates', { method: 'POST', body: JSON.stringify(body) });
+      const res = await hevyFetch('/v1/exercise_templates', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+      templateCache?.invalidatePrefix(TEMPLATE_LIST_PREFIX);
+      return res;
     }
 
     case 'hevy_get_exercise_history': {

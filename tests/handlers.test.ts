@@ -213,4 +213,89 @@ describe('tool handlers via mocked fetch (subprocess + nock preload)', () => {
     const payload = JSON.parse(result.content[0].text) as { error_code: string };
     expect(payload.error_code).toBe('UNKNOWN_TOOL');
   });
+
+  it('hevy_list_exercise_templates serves the 2nd identical call from cache (single fixture consumed)', async () => {
+    // Only one fixture; if cache misses the 2nd call, nock NetConnect will
+    // surface as UPSTREAM_ERROR. A passing 2nd call proves the cache hit.
+    client = startMcpServer({
+      env: { HEVY_API_KEY: 'test-key' },
+      preload: PRELOAD,
+      fixtures: [
+        {
+          method: 'GET',
+          pathRegex: '^/v1/exercise_templates\\?(?=.*\\bpage=1\\b)(?=.*\\bpageSize=10\\b)',
+          status: 200,
+          body: { page: 1, page_count: 1, exercise_templates: [{ id: 'ABCDEF12' }] },
+        },
+      ],
+    });
+    await initializeClient(client);
+    const first = await callTool(client, 'hevy_list_exercise_templates', {});
+    expect(first.isError).toBeFalsy();
+    const second = await callTool(client, 'hevy_list_exercise_templates', {});
+    expect(second.isError).toBeFalsy();
+    const parsed = JSON.parse(second.content[0].text) as {
+      exercise_templates: Array<{ id: string }>;
+    };
+    expect(parsed.exercise_templates[0].id).toBe('ABCDEF12');
+  });
+
+  it('HEVY_MCP_DISABLE_CACHE=1 forces every list call to hit the upstream', async () => {
+    // Only one fixture: with cache disabled, the 2nd call must fall through
+    // to nock and error (NetConnect disabled with no remaining interceptors).
+    client = startMcpServer({
+      env: { HEVY_API_KEY: 'test-key', HEVY_MCP_DISABLE_CACHE: '1' },
+      preload: PRELOAD,
+      fixtures: [
+        {
+          method: 'GET',
+          pathRegex: '^/v1/exercise_templates\\?(?=.*\\bpage=1\\b)(?=.*\\bpageSize=10\\b)',
+          status: 200,
+          body: { page: 1, page_count: 1, exercise_templates: [] },
+        },
+      ],
+    });
+    await initializeClient(client);
+    const first = await callTool(client, 'hevy_list_exercise_templates', {});
+    expect(first.isError).toBeFalsy();
+    const second = await callTool(client, 'hevy_list_exercise_templates', {});
+    expect(second.isError).toBe(true);
+    const payload = JSON.parse(second.content[0].text) as { error_code: string };
+    expect(payload.error_code).toBe('UPSTREAM_ERROR');
+  });
+
+  it('hevy_create_exercise_template invalidates the list cache (refetch required after write)', async () => {
+    client = startMcpServer({
+      env: { HEVY_API_KEY: 'test-key', HEVY_MCP_ALLOW_WRITES: '1' },
+      preload: PRELOAD,
+      fixtures: [
+        {
+          method: 'GET',
+          pathRegex: '^/v1/exercise_templates\\?(?=.*\\bpage=1\\b)(?=.*\\bpageSize=10\\b)',
+          status: 200,
+          body: { page: 1, page_count: 1, exercise_templates: [] },
+        },
+        {
+          method: 'POST',
+          pathRegex: '^/v1/exercise_templates$',
+          status: 201,
+          body: { id: 'new-id' },
+        },
+      ],
+    });
+    await initializeClient(client);
+    const first = await callTool(client, 'hevy_list_exercise_templates', {});
+    expect(first.isError).toBeFalsy();
+    const created = await callTool(client, 'hevy_create_exercise_template', {
+      exercise: { title: 'My pull', type: 'weight_reps', primary_muscle_group: 'lats' },
+    });
+    expect(created.isError).toBeFalsy();
+    // Second list call — cache was invalidated by the create, so this MUST
+    // hit nock again. No GET interceptor remains, so it errors → proves
+    // invalidation fired.
+    const afterWrite = await callTool(client, 'hevy_list_exercise_templates', {});
+    expect(afterWrite.isError).toBe(true);
+    const payload = JSON.parse(afterWrite.content[0].text) as { error_code: string };
+    expect(payload.error_code).toBe('UPSTREAM_ERROR');
+  });
 });
