@@ -1,8 +1,13 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.diecoscai/hevy-mcp",
+  "title": "Hevy MCP",
   "description": "MCP server for the Hevy fitness API. Workouts, routines, exercises, and body measurements.",
   "version": "0.2.0",
+  "repository": {
+    "url": "https://github.com/diecoscai/hevy-mcp",
+    "source": "github"
+  },
   "packages": [
     {
       "registryType": "npm",

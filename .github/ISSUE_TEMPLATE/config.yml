@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Hevy API documentation
+    url: https://api.hevyapp.com/docs
+    about: If you have a question about the Hevy API itself (not this MCP wrapper), check the official docs first.
+  - name: Model Context Protocol spec
+    url: https://modelcontextprotocol.io
+    about: For questions about MCP semantics (tool shapes, error envelopes, transports), read the spec.
