@@ -32,6 +32,35 @@ Design goals:
 
 > **Write tools are dry-run by default.** The first time you ask the server to create or update anything (a workout, a routine, a body measurement) you'll see a preview payload, not a real change. Set `HEVY_MCP_ALLOW_WRITES=1` in the same `env` block to execute writes — see [Safety](#safety--dry-run-writes).
 
+## Run from source
+
+While the npm package is being published, you can run the server directly from this repository. This is a regular user path, not a contributor path — contributors should use [Development](#development) below.
+
+```bash
+git clone https://github.com/diecoscai/hevy-mcp.git
+cd hevy-mcp
+npm ci
+npm run build
+```
+
+Then point your MCP client at the built entry instead of `npx @diecoscai/hevy-mcp`:
+
+```json
+{
+  "mcpServers": {
+    "hevy": {
+      "command": "node",
+      "args": ["/absolute/path/to/hevy-mcp/dist/index.js"],
+      "env": {
+        "HEVY_API_KEY": "PASTE_YOUR_KEY_HERE"
+      }
+    }
+  }
+}
+```
+
+The `env` block (including `HEVY_MCP_ALLOW_WRITES`) works identically to the npx snippets below.
+
 ## Configuration
 
 Each MCP client spawns the server as a stdio subprocess with `HEVY_API_KEY` in its `env` block.
@@ -229,6 +258,8 @@ If Hevy publishes webhooks in the public OpenAPI spec, subscription tools
 will land here with the same dry-run gate as the other writes.
 
 ## Development
+
+For contributors working on the server itself. If you only want to run the server locally against your own Hevy account, use [Run from source](#run-from-source) instead.
 
 ```bash
 git clone https://github.com/diecoscai/hevy-mcp.git

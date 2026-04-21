@@ -1,0 +1,87 @@
+name: Bug report
+description: Report a tool that returns the wrong result, errors unexpectedly, or disagrees with the Hevy API.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug. Please fill in every field — the more specific the repro, the faster a fix lands.
+        If the bug involves a write tool, please confirm it reproduces in dry-run mode (no `HEVY_MCP_ALLOW_WRITES=1`) whenever possible.
+
+  - type: dropdown
+    id: tool
+    attributes:
+      label: Affected tool
+      description: Pick the tool that misbehaves.
+      options:
+        - hevy_get_user_info
+        - hevy_list_workouts
+        - hevy_get_workout
+        - hevy_get_workout_count
+        - hevy_get_workout_events
+        - hevy_create_workout
+        - hevy_update_workout
+        - hevy_list_routines
+        - hevy_get_routine
+        - hevy_create_routine
+        - hevy_update_routine
+        - hevy_list_routine_folders
+        - hevy_get_routine_folder
+        - hevy_create_routine_folder
+        - hevy_list_exercise_templates
+        - hevy_get_exercise_template
+        - hevy_create_exercise_template
+        - hevy_get_exercise_history
+        - hevy_list_body_measurements
+        - hevy_get_body_measurement
+        - hevy_create_body_measurement
+        - hevy_update_body_measurement
+        - other / multiple
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction steps
+      description: Exact tool input (JSON) and the sequence that triggers the bug.
+      placeholder: |
+        1. Call `hevy_list_workouts` with { "pageSize": 5 }
+        2. …
+      render: markdown
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_vs_actual
+    attributes:
+      label: Expected vs actual
+      description: What did you expect the tool to return, and what did it actually return? Paste both JSON blobs if you can.
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: hevy-mcp version
+      description: Output of `npx @diecoscai/hevy-mcp --version`, or the git SHA if running from source.
+      placeholder: "0.2.0"
+    validations:
+      required: true
+
+  - type: input
+    id: node
+    attributes:
+      label: Node.js version
+      description: Output of `node --version`.
+      placeholder: "v20.18.0"
+    validations:
+      required: true
+
+  - type: input
+    id: client
+    attributes:
+      label: MCP client
+      description: Which client spawned the server? (Claude Desktop, Claude Code, Cursor, VS Code, MCP Inspector, custom…)
+    validations:
+      required: true
