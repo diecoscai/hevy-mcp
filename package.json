@@ -36,6 +36,10 @@
   },
   "author": "Diego Iscai",
   "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "mcpName": "io.github.diecoscai/hevy-mcp",
   "scripts": {
     "build": "tsc && chmod +x dist/index.js",
