@@ -305,6 +305,85 @@ describe('tool handlers via mocked fetch (subprocess + nock preload)', () => {
     expect(payload.error_code).toBe('UPSTREAM_ERROR');
   });
 
+  it('hevy_create_body_measurement sends a FLAT body (no body_measurement wrapper)', async () => {
+    client = startMcpServer({
+      env: { HEVY_API_KEY: 'test-key', HEVY_MCP_ALLOW_WRITES: '1' },
+      preload: PRELOAD,
+      fixtures: [
+        {
+          method: 'POST',
+          pathRegex: '^/v1/body_measurements$',
+          status: 201,
+          body: '',
+          bodyEquals: { date: '2024-01-15', weight_kg: 80 },
+        },
+      ],
+    });
+    await initializeClient(client);
+    const result = await callTool(client, 'hevy_create_body_measurement', {
+      date: '2024-01-15',
+      weight_kg: 80,
+    });
+    // If the MCP sent a wrapped body (e.g. { body_measurement: {...} }),
+    // nock would not match and this would surface as UPSTREAM_ERROR.
+    expect(result.isError).toBeFalsy();
+  });
+
+  it('hevy_update_body_measurement sends only body_measurement (date stays in URL)', async () => {
+    client = startMcpServer({
+      env: { HEVY_API_KEY: 'test-key', HEVY_MCP_ALLOW_WRITES: '1' },
+      preload: PRELOAD,
+      fixtures: [
+        {
+          method: 'PUT',
+          pathRegex: '^/v1/body_measurements/2024-01-15$',
+          status: 200,
+          body: '',
+          bodyEquals: { weight_kg: 81 },
+        },
+      ],
+    });
+    await initializeClient(client);
+    const result = await callTool(client, 'hevy_update_body_measurement', {
+      date: '2024-01-15',
+      body_measurement: { weight_kg: 81 },
+    });
+    expect(result.isError).toBeFalsy();
+  });
+
+  it('hevy_create_exercise_template wraps the body in { exercise } (not exercise_template)', async () => {
+    client = startMcpServer({
+      env: { HEVY_API_KEY: 'test-key', HEVY_MCP_ALLOW_WRITES: '1' },
+      preload: PRELOAD,
+      fixtures: [
+        {
+          method: 'POST',
+          pathRegex: '^/v1/exercise_templates$',
+          status: 200,
+          body: 'new-template-id',
+          bodyContains: {
+            exercise: {
+              title: 'Wrapper check',
+              exercise_type: 'weight_reps',
+              muscle_group: 'biceps',
+              equipment_category: 'dumbbell',
+            },
+          },
+        },
+      ],
+    });
+    await initializeClient(client);
+    const result = await callTool(client, 'hevy_create_exercise_template', {
+      exercise: {
+        title: 'Wrapper check',
+        exercise_type: 'weight_reps',
+        muscle_group: 'biceps',
+        equipment_category: 'dumbbell',
+      },
+    });
+    expect(result.isError).toBeFalsy();
+  });
+
   it('hevy_create_exercise_template surfaces a plain-text body (the real server returns the new id as text/plain)', async () => {
     client = startMcpServer({
       env: { HEVY_API_KEY: 'test-key', HEVY_MCP_ALLOW_WRITES: '1' },
