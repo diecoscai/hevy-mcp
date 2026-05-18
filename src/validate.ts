@@ -56,12 +56,12 @@ export const EXERCISE_TYPES = [
 export const CUSTOM_EXERCISE_TYPES = [
   'weight_reps',
   'reps_only',
-  'duration',
-  'distance_duration',
-  'bodyweight_weighted',
-  'bodyweight_assisted',
-  'short_distance_weight',
   'bodyweight_reps',
+  'bodyweight_assisted_reps',
+  'duration',
+  'weight_duration',
+  'distance_duration',
+  'short_distance_weight',
 ] as const;
 
 const uuid = z.string().uuid();
@@ -78,8 +78,8 @@ const exerciseTemplateIdSchema = z
   );
 
 const titleSchema = z.string().min(1).max(255);
-const descriptionSchema = z.string().max(4096);
-const notesSchema = z.string().max(2048);
+const descriptionSchema = z.string().min(1).max(4096);
+const notesSchema = z.string().min(1).max(2048);
 
 const pageSchema = z.coerce.number().int().min(1).default(1);
 const pageSizeSchema = z.coerce.number().int().min(1).max(10).default(10);
@@ -174,7 +174,7 @@ const workoutBodySchema = z
   })
   .strict();
 
-const routineBodySchema = z
+const routineBodyCreateSchema = z
   .object({
     title: titleSchema,
     folder_id: z.number().int().positive().nullable().optional(),
@@ -183,14 +183,21 @@ const routineBodySchema = z
   })
   .strict();
 
+const routineBodyUpdateSchema = z
+  .object({
+    title: titleSchema,
+    notes: notesSchema.optional(),
+    exercises: z.array(routineExerciseSchema).min(1),
+  })
+  .strict();
+
 const exerciseTemplateCreateSchema = z
   .object({
     title: z.string().min(1).max(100),
-    type: z.enum(CUSTOM_EXERCISE_TYPES),
-    primary_muscle_group: muscleGroupSchema,
-    secondary_muscle_groups: z.array(muscleGroupSchema).optional(),
-    equipment_category: equipmentCategorySchema.optional(),
-    is_custom: z.boolean().optional(),
+    exercise_type: z.enum(CUSTOM_EXERCISE_TYPES),
+    muscle_group: muscleGroupSchema,
+    other_muscles: z.array(muscleGroupSchema).optional(),
+    equipment_category: equipmentCategorySchema,
   })
   .strict();
 
@@ -244,8 +251,8 @@ const schemas = {
     .object({ page: pageSchema.optional(), pageSize: pageSizeSchema.optional() })
     .strict(),
   hevy_get_routine: z.object({ routineId: uuid }).strict(),
-  hevy_create_routine: z.object({ routine: routineBodySchema }).strict(),
-  hevy_update_routine: z.object({ routineId: uuid, routine: routineBodySchema }).strict(),
+  hevy_create_routine: z.object({ routine: routineBodyCreateSchema }).strict(),
+  hevy_update_routine: z.object({ routineId: uuid, routine: routineBodyUpdateSchema }).strict(),
 
   hevy_list_routine_folders: z
     .object({ page: pageSchema.optional(), pageSize: pageSizeSchema.optional() })

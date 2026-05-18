@@ -258,6 +258,10 @@ mechanism the public API offers for change detection.
 If Hevy publishes webhooks in the public OpenAPI spec, subscription tools
 will land here with the same dry-run gate as the other writes.
 
+## Spec ≠ reality
+
+The [public OpenAPI doc](https://api.hevyapp.com/docs/) (self-versioned `0.0.1`) diverges from the live server in several places — wrong wrapper for `POST /v1/exercise_templates`, wrong enum values for `CustomExerciseType`, `folder_id` rejected on `PUT /v1/routines/{id}`, plain-text response on a successful template create, and more. This server implements what the **real** server accepts. The full list of confirmed divergences lives in [`docs/api-quirks.md`](./docs/api-quirks.md) and can be re-verified with `scripts/verify-api.sh`.
+
 ## Development
 
 For contributors working on the server itself. If you only want to run the server locally against your own Hevy account, use [Run from source](#run-from-source) instead.

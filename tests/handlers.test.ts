@@ -192,8 +192,9 @@ describe('tool handlers via mocked fetch (subprocess + nock preload)', () => {
     const result = await callTool(client, 'hevy_create_exercise_template', {
       exercise: {
         title: 'x'.repeat(300),
-        type: 'weight_reps',
-        primary_muscle_group: 'chest',
+        exercise_type: 'weight_reps',
+        muscle_group: 'chest',
+        equipment_category: 'barbell',
       },
     });
     expect(result.isError).toBe(true);
@@ -287,7 +288,12 @@ describe('tool handlers via mocked fetch (subprocess + nock preload)', () => {
     const first = await callTool(client, 'hevy_list_exercise_templates', {});
     expect(first.isError).toBeFalsy();
     const created = await callTool(client, 'hevy_create_exercise_template', {
-      exercise: { title: 'My pull', type: 'weight_reps', primary_muscle_group: 'lats' },
+      exercise: {
+        title: 'My pull',
+        exercise_type: 'weight_reps',
+        muscle_group: 'lats',
+        equipment_category: 'machine',
+      },
     });
     expect(created.isError).toBeFalsy();
     // Second list call — cache was invalidated by the create, so this MUST
@@ -297,5 +303,33 @@ describe('tool handlers via mocked fetch (subprocess + nock preload)', () => {
     expect(afterWrite.isError).toBe(true);
     const payload = JSON.parse(afterWrite.content[0].text) as { error_code: string };
     expect(payload.error_code).toBe('UPSTREAM_ERROR');
+  });
+
+  it('hevy_create_exercise_template surfaces a plain-text body (the real server returns the new id as text/plain)', async () => {
+    client = startMcpServer({
+      env: { HEVY_API_KEY: 'test-key', HEVY_MCP_ALLOW_WRITES: '1' },
+      preload: PRELOAD,
+      fixtures: [
+        {
+          method: 'POST',
+          pathRegex: '^/v1/exercise_templates$',
+          status: 200,
+          body: 'd0778813-ce6b-4f40-a3ec-a9c0f254e3d3',
+        },
+      ],
+    });
+    await initializeClient(client);
+    const created = await callTool(client, 'hevy_create_exercise_template', {
+      exercise: {
+        title: 'Plain-text response check',
+        exercise_type: 'weight_reps',
+        muscle_group: 'biceps',
+        equipment_category: 'dumbbell',
+      },
+    });
+    expect(created.isError).toBeFalsy();
+    // The MCP wraps the upstream body via JSON.stringify, so a plain-text
+    // UUID arrives as a JSON-encoded string here.
+    expect(created.content[0].text).toBe('"d0778813-ce6b-4f40-a3ec-a9c0f254e3d3"');
   });
 });
