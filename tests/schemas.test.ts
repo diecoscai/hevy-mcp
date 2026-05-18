@@ -76,4 +76,35 @@ describe('MCP schema conformance', () => {
       expect(tool.description, tool.name).not.toMatch(spanish);
     }
   });
+
+  it('write tools that need exercise_template_id reference the lookup tool', () => {
+    const needsTemplate = [
+      'hevy_create_workout',
+      'hevy_update_workout',
+      'hevy_create_routine',
+      'hevy_update_routine',
+    ];
+    for (const name of needsTemplate) {
+      const t = tools.find((x) => x.name === name);
+      expect(t, `tool ${name} not found`).toBeDefined();
+      const desc = (t?.description ?? '').toLowerCase();
+      expect(
+        desc.includes('hevy_list_exercise_templates') ||
+          desc.includes('hevy_get_exercise_template'),
+        `${name} description must reference a template lookup tool`
+      ).toBe(true);
+    }
+  });
+
+  it('every write tool documents the dry-run gate', () => {
+    const writeTools = tools.filter(
+      (t) => t.name.startsWith('hevy_create_') || t.name.startsWith('hevy_update_')
+    );
+    expect(writeTools.length).toBeGreaterThan(0);
+    for (const t of writeTools) {
+      expect(t.description.toLowerCase(), `${t.name} description`).toMatch(
+        /dry[- ]?run|allow_writes/
+      );
+    }
+  });
 });
