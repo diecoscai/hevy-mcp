@@ -55,6 +55,32 @@ describe('toToolExecutionError', () => {
     expect(payload.hint).toMatch(/update/i);
   });
 
+  it('disambiguates 401 with a Pro hint when the upstream body mentions Pro', () => {
+    const err = new HevyApiError(401, '{"error":"This endpoint requires Hevy Pro"}');
+    const payload = JSON.parse(toToolExecutionError(err).content[0].text) as SepErrorPayload;
+    expect(payload.hint).toMatch(/pro/i);
+    expect(payload.hint).not.toMatch(/HEVY_API_KEY/);
+  });
+
+  it('disambiguates 401 with a key hint when the upstream body does not mention Pro', () => {
+    const err = new HevyApiError(401, 'Unauthorized');
+    const payload = JSON.parse(toToolExecutionError(err).content[0].text) as SepErrorPayload;
+    expect(payload.hint).toMatch(/HEVY_API_KEY/);
+    expect(payload.hint).not.toMatch(/pro subscription/i);
+  });
+
+  it('emits a 403 limit hint when the body mentions limit', () => {
+    const err = new HevyApiError(403, '{"error":"Routine limit exceeded"}');
+    const payload = JSON.parse(toToolExecutionError(err).content[0].text) as SepErrorPayload;
+    expect(payload.hint).toMatch(/limit/i);
+  });
+
+  it('emits a 429 rate-limit hint', () => {
+    const err = new HevyApiError(429, 'Too Many Requests');
+    const payload = JSON.parse(toToolExecutionError(err).content[0].text) as SepErrorPayload;
+    expect(payload.hint).toMatch(/rate/i);
+  });
+
   it('wraps UnknownToolError into SEP-1303 shape with UNKNOWN_TOOL', () => {
     const err = new UnknownToolError('hevy_fake');
     const result = toToolExecutionError(err);
@@ -80,11 +106,12 @@ describe('toToolExecutionError', () => {
 });
 
 describe('dryRunResult', () => {
-  it('returns a non-error envelope with dry_run=true and would_send', () => {
+  it('returns a non-error envelope with dry_run=true, executed=false, and would_send', () => {
     const result = dryRunResult('POST', '/v1/workouts', { title: 'T' });
     expect((result as { isError?: boolean }).isError).toBeUndefined();
     const payload = parseResultPayload(result);
     expect(payload.dry_run).toBe(true);
+    expect(payload.executed).toBe(false);
     expect(payload.would_send).toEqual({
       method: 'POST',
       path: '/v1/workouts',

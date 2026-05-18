@@ -3,7 +3,7 @@ export class MissingCredentialsError extends Error {
   constructor(message?: string) {
     super(
       message ??
-        'No Hevy API key found. Set the HEVY_API_KEY environment variable to a key from https://hevy.com/settings?developer.'
+        'No Hevy API key found. Set HEVY_API_KEY in the env block of your MCP client config to a key from https://hevy.com/settings?developer (requires a Hevy Pro subscription).'
     );
     this.name = 'MissingCredentialsError';
   }
