@@ -118,8 +118,7 @@ export function dryRunResult(
     dry_run: true,
     executed: false,
     would_send: { method, path, ...(body !== undefined ? { body } : {}) },
-    hint:
-      'No network call was made. To execute, add "HEVY_MCP_ALLOW_WRITES": "1" to the env block of your MCP client config and restart the client.',
+    hint: 'No network call was made. To execute, add "HEVY_MCP_ALLOW_WRITES": "1" to the env block of your MCP client config and restart the client.',
   };
   return {
     content: [{ type: 'text', text: JSON.stringify(payload) }],
