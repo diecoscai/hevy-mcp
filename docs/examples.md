@@ -6,6 +6,19 @@ All write flows below assume `HEVY_MCP_ALLOW_WRITES=1` is set. Without it, every
 
 ---
 
+## How write tools resolve exercises
+
+Every workout/routine create or update needs an `exercise_template_id` per exercise. The LLM resolves this in two steps before composing the write:
+
+1. **Find the template id.** Call `hevy_list_exercise_templates` with `pageSize: 100` (this is the only list endpoint that accepts up to 100) and scan results for `title` matches. Built-in templates have 8-char uppercase hex ids (e.g. `79D0BB3A`); custom templates have lowercase UUIDs.
+2. **Compose the write.** Use the id in the `exercise_template_id` field of each exercise.
+
+If the user names an exercise that doesn't exist in their template list, the LLM should either propose creating a custom template with `hevy_create_exercise_template`, or ask the user which existing template is the closest match.
+
+The list is cached in-process for an hour by default (configurable via `HEVY_MCP_CACHE_TTL_SECONDS`), so repeated lookups within a session are free after the first call.
+
+---
+
 ## 1. Log today's workout
 
 Prompt:
@@ -75,19 +88,17 @@ Flow:
 
 1. `hevy_get_routine` with `routineId` — gets the full shape.
 2. `hevy_list_routine_folders` to find the folder id for "Coaching", or `hevy_create_routine_folder` with `title: "Coaching"` if it doesn't exist.
-3. `hevy_create_routine` with the fetched body, replacing `folder_id` and clearing `notes` on each exercise:
+3. `hevy_create_routine` with the fetched body, replacing `folder_id` and omitting the coach-only `notes` fields (the Hevy server rejects empty notes — send the field with content, or omit it entirely):
 
 ```json
 {
   "routine": {
     "title": "Upper A (coach copy)",
     "folder_id": 42,
-    "notes": "",
     "exercises": [
       {
         "exercise_template_id": "79D0BB3A",
         "rest_seconds": 120,
-        "notes": "",
         "sets": [
           { "type": "normal", "rep_range": { "start": 5, "end": 8 } }
         ]
@@ -97,7 +108,7 @@ Flow:
 }
 ```
 
-Note: `rep_range` is accepted only on routine sets (not workouts).
+Note: `rep_range` is accepted only on routine sets (not workouts). `notes` cannot be `""` — omit the field or send a non-empty string.
 
 ---
 
@@ -150,12 +161,13 @@ Any write flow can be run safely without `HEVY_MCP_ALLOW_WRITES=1`. The server r
 ```json
 {
   "dry_run": true,
+  "executed": false,
   "would_send": {
     "method": "POST",
     "path": "/v1/body_measurements",
     "body": { "date": "2026-04-19", "weight_kg": 82.4, "fat_percent": 14 }
   },
-  "hint": "set HEVY_MCP_ALLOW_WRITES=1 to execute"
+  "hint": "No network call was made. To execute, add \"HEVY_MCP_ALLOW_WRITES\": \"1\" to the env block of your MCP client config and restart the client."
 }
 ```
 

@@ -8,7 +8,7 @@ All MCP clients launch the server as a stdio subprocess. The recommended invocat
 
 - `-y` skips npm's install confirmation.
 - `npx` transparently caches the package; subsequent launches are fast.
-- Pinning a version (`@diecoscai/hevy-mcp@0.1.0`) in the client config is recommended for production setups.
+- Pinning a version (e.g. `@diecoscai/hevy-mcp@0.3.0`) in the client config is recommended for production setups. Check the [latest version on npm](https://www.npmjs.com/package/@diecoscai/hevy-mcp).
 
 ### Where does the API key come from?
 
@@ -140,4 +140,32 @@ This launches `@modelcontextprotocol/inspector` against the compiled server and 
 npx -y @diecoscai/hevy-mcp@latest --version
 ```
 
-Pin a specific version in the client config (`@diecoscai/hevy-mcp@0.1.0`) if reproducibility matters to you.
+Pin a specific version in the client config (e.g. `@diecoscai/hevy-mcp@0.3.0`) if reproducibility matters to you.
+
+---
+
+## First-run troubleshooting
+
+The most common failure modes, in roughly the order people hit them.
+
+### "0 tools available" in the client
+- Confirm the client was fully restarted after editing its config (Claude Desktop in particular needs Cmd+Q / Quit, not just window close).
+- Run `npx -y @diecoscai/hevy-mcp@latest --version` in a terminal. It should print the package name and version. If `npx` cannot find `node`, fix your PATH (especially on Windows where Claude Desktop spawns from a non-login shell — see the Claude Desktop section above).
+- Look at the client's MCP server logs. A missing `HEVY_API_KEY` causes the server to exit with code `1` and a message naming the variable and the URL to generate a key.
+
+### `error_code: UPSTREAM_ERROR` with status 401
+Two distinct causes, distinguished by the `hint` field of the error envelope:
+- **`hint` mentions "Pro"** — your Hevy account is not on the Pro plan. The public API is Pro-only. Upgrade in the Hevy app, then retry.
+- **`hint` mentions `HEVY_API_KEY`** — the key is missing, wrong, or revoked. Regenerate at <https://hevy.com/settings?developer>, paste into the client's `env` block, restart the client.
+
+### `error_code: UPSTREAM_ERROR` with status 429
+Hevy is rate-limiting your account. Wait a few seconds and retry. There is no published rate-limit number; if you hit this repeatedly, space requests by ~500 ms.
+
+### A write tool returns `{ dry_run: true, executed: false, ... }`
+This is the safety default — no HTTP call was made. To execute real writes, add `"HEVY_MCP_ALLOW_WRITES": "1"` to the `env` block of your MCP client config (next to `HEVY_API_KEY`), then **restart the client**. The Hevy API has no DELETE endpoint, so a wrong write cannot be rolled back from this server — the dry-run gate is your safety net.
+
+### Empty `workouts: []` on first call
+That is exactly what it says — the account has no workouts in that page. For a brand-new account, log a workout in the Hevy app first.
+
+### `error_code: VALIDATION_ERROR` mentioning `"notes" too small`
+The Hevy server rejects empty-string notes. Either omit `notes` entirely or send a non-empty string. The same applies to `description` on workouts.
