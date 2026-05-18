@@ -3,6 +3,7 @@
 Model Context Protocol server for the [Hevy](https://www.hevyapp.com/) fitness API. Manage workouts, routines, exercises, and body measurements from any MCP-compatible client — Claude Desktop, Claude Code, Cursor, VS Code, and anything else that speaks MCP over stdio.
 
 [![npm version](https://img.shields.io/npm/v/@diecoscai/hevy-mcp.svg)](https://www.npmjs.com/package/@diecoscai/hevy-mcp)
+[![CI](https://github.com/diecoscai/hevy-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/diecoscai/hevy-mcp/actions/workflows/ci.yml)
 [![license](https://img.shields.io/npm/l/@diecoscai/hevy-mcp.svg)](./LICENSE)
 [![node](https://img.shields.io/node/v/@diecoscai/hevy-mcp.svg)](./package.json)
 
@@ -34,7 +35,7 @@ Design goals:
 
 ## Run from source
 
-While the npm package is being published, you can run the server directly from this repository. This is a regular user path, not a contributor path — contributors should use [Development](#development) below.
+You can also run the server directly from a local clone instead of via `npx`. Useful if you want to pin a specific commit, debug a tool locally, or run an unreleased version. Contributors should use [Development](#development) below instead.
 
 ```bash
 git clone https://github.com/diecoscai/hevy-mcp.git
