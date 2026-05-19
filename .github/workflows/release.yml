@@ -44,7 +44,10 @@ jobs:
       - name: Run tests
         run: npm test
 
-      - name: Publish to npm (with provenance)
+      - name: Publish to npm (OIDC trusted publishing + provenance)
+        # Auth is via OIDC trusted publishing configured in the npm package
+        # settings — no NPM_TOKEN env var needed. The id-token: write
+        # permission above lets setup-node mint an OIDC token that npm
+        # exchanges for a short-lived publish credential.
+        # Setup docs: https://docs.npmjs.com/trusted-publishers
         run: npm publish --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
