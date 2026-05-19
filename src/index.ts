@@ -44,7 +44,15 @@ async function hevyFetch(path: string, options: RequestInit = {}): Promise<unkno
   if (!res.ok) {
     throw new HevyApiError(res.status, text);
   }
-  return text ? JSON.parse(text) : null;
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    // Some POST endpoints (e.g. exercise_templates create) return the new
+    // resource id as plain text, not JSON. Surface the raw string instead
+    // of crashing.
+    return text;
+  }
 }
 
 const pageParams = {
@@ -106,12 +114,12 @@ const equipmentEnum = [
 const customExerciseTypeEnum = [
   'weight_reps',
   'reps_only',
-  'duration',
-  'distance_duration',
-  'bodyweight_weighted',
-  'bodyweight_assisted',
-  'short_distance_weight',
   'bodyweight_reps',
+  'bodyweight_assisted_reps',
+  'duration',
+  'weight_duration',
+  'distance_duration',
+  'short_distance_weight',
 ];
 
 const workoutSetSchema = {
@@ -168,7 +176,7 @@ const workoutExerciseSchema = {
       description:
         'Contiguous integer group id (or null). Supersets must be adjacent and share the same id.',
     },
-    notes: { type: 'string', maxLength: 2048 },
+    notes: { type: 'string', minLength: 1, maxLength: 2048 },
     sets: { type: 'array', minItems: 1, items: workoutSetSchema },
   },
 };
@@ -181,7 +189,7 @@ const routineExerciseSchema = {
     exercise_template_id: { type: 'string' },
     superset_id: { type: ['integer', 'null'] },
     rest_seconds: { type: 'integer', minimum: 0 },
-    notes: { type: 'string', maxLength: 2048 },
+    notes: { type: 'string', minLength: 1, maxLength: 2048 },
     sets: { type: 'array', minItems: 1, items: routineSetSchema },
   },
 };
@@ -192,7 +200,7 @@ const workoutBodySchema = {
   required: ['title', 'start_time', 'end_time', 'exercises'],
   properties: {
     title: { type: 'string', minLength: 1, maxLength: 255 },
-    description: { type: 'string', maxLength: 4096 },
+    description: { type: 'string', minLength: 1, maxLength: 4096 },
     start_time: { type: 'string', description: 'ISO-8601 datetime.' },
     end_time: { type: 'string', description: 'ISO-8601 datetime.' },
     is_private: { type: 'boolean' },
@@ -201,14 +209,25 @@ const workoutBodySchema = {
   },
 };
 
-const routineBodySchema = {
+const routineBodyCreateSchema = {
   type: 'object',
   additionalProperties: false,
   required: ['title', 'exercises'],
   properties: {
     title: { type: 'string', minLength: 1, maxLength: 255 },
     folder_id: { type: ['integer', 'null'], minimum: 1 },
-    notes: { type: 'string', maxLength: 2048 },
+    notes: { type: 'string', minLength: 1, maxLength: 2048 },
+    exercises: { type: 'array', minItems: 1, items: routineExerciseSchema },
+  },
+};
+
+const routineBodyUpdateSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['title', 'exercises'],
+  properties: {
+    title: { type: 'string', minLength: 1, maxLength: 255 },
+    notes: { type: 'string', minLength: 1, maxLength: 2048 },
     exercises: { type: 'array', minItems: 1, items: routineExerciseSchema },
   },
 };
@@ -250,7 +269,7 @@ const TOOLS: Tool[] = [
   {
     name: 'hevy_list_workouts',
     description:
-      'List workouts newest-first. pageSize is 1-10 (Hevy returns HTTP 400 for >10). Response envelope: { page, page_count, workouts }. No DELETE endpoint exists for workouts.',
+      'List workouts newest-first, paginated. Use this to discover workout ids; fetch a single full record with hevy_get_workout, or just the count with hevy_get_workout_count. pageSize is 1-10 (Hevy returns 400 for >10). Response envelope: { page, page_count, workouts: [...] }. Empty account returns workouts: []. No DELETE endpoint exists on the Hevy API.',
     inputSchema: { type: 'object', additionalProperties: false, properties: { ...pageParams } },
   },
   {
@@ -271,7 +290,7 @@ const TOOLS: Tool[] = [
   {
     name: 'hevy_get_workout_events',
     description:
-      'Delta sync: paginated workout events (updated | deleted) newer than `since`. Apply events in order. pageSize 1-10. `deleted` payload is { id, deleted_at } — the API never exposes a DELETE endpoint; deletions surface only through this feed.',
+      'Delta sync feed: events newer than `since` (ISO-8601). Each event is either { type: "updated", workout } or { type: "deleted", id, deleted_at }. To incrementally sync a local cache: on first call pass since=1970-01-01T00:00:00Z, then for each subsequent call pass the timestamp of the newest event you have seen. This is the ONLY way to detect deletions — the Hevy API has no DELETE endpoint, so deleted workouts surface here and nowhere else. pageSize 1-10.',
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -287,7 +306,7 @@ const TOOLS: Tool[] = [
   {
     name: 'hevy_create_workout',
     description:
-      'Create a workout (POST /v1/workouts). Required: title, start_time, end_time, exercises[]. Set types: warmup|normal|failure|dropset. RPE is null or one of 6, 7, 7.5, 8, 8.5, 9, 9.5, 10. Superset ids must be contiguous across adjacent exercises. rep_range is routines-only and is rejected here. When HEVY_MCP_ALLOW_WRITES is unset this returns a dry-run payload and performs no network call.',
+      'Create a workout (POST /v1/workouts). Required: title, start_time (ISO-8601), end_time (ISO-8601), exercises[]. Each exercise needs an exercise_template_id — call hevy_list_exercise_templates (pageSize up to 100) to find it by name, or hevy_get_exercise_template if you already know the id. Set types: warmup|normal|failure|dropset. RPE is null or one of 6, 7, 7.5, 8, 8.5, 9, 9.5, 10. Superset ids must be contiguous across adjacent exercises. rep_range is routines-only and is rejected here. Dry-run by default: returns { dry_run: true, executed: false, ... } unless the env var HEVY_MCP_ALLOW_WRITES=1 is set on the server process.',
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -298,7 +317,7 @@ const TOOLS: Tool[] = [
   {
     name: 'hevy_update_workout',
     description:
-      'Full replace of a workout (PUT /v1/workouts/{id}). Any field not re-sent is dropped. Write-gated by HEVY_MCP_ALLOW_WRITES (dry-run otherwise). No DELETE endpoint exists.',
+      'Full replace of a workout (PUT /v1/workouts/{id}). Any field not re-sent is dropped — to preserve a field, send it back unchanged. Each exercise needs an exercise_template_id (find via hevy_list_exercise_templates or hevy_get_exercise_template). Dry-run by default: returns { dry_run: true, executed: false, ... } unless HEVY_MCP_ALLOW_WRITES=1 is set on the server process. No DELETE endpoint exists on the Hevy API.',
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -329,25 +348,25 @@ const TOOLS: Tool[] = [
   {
     name: 'hevy_create_routine',
     description:
-      'Create a routine (POST /v1/routines). Required: title, exercises[]. Set types warmup|normal|failure|dropset. rep_range { start, end } is accepted on routine sets (NOT on workout sets). Write-gated by HEVY_MCP_ALLOW_WRITES (dry-run otherwise).',
+      'Create a routine (POST /v1/routines). Required: title, exercises[]. Each exercise needs an exercise_template_id — call hevy_list_exercise_templates to find it. Optional folder_id (positive integer) places the routine in a folder (use hevy_list_routine_folders to discover folder ids). Set types: warmup|normal|failure|dropset. rep_range { start, end } is accepted on routine sets (NOT on workout sets). Dry-run by default: returns { dry_run: true, executed: false, ... } unless HEVY_MCP_ALLOW_WRITES=1 is set on the server process.',
     inputSchema: {
       type: 'object',
       additionalProperties: false,
       required: ['routine'],
-      properties: { routine: routineBodySchema },
+      properties: { routine: routineBodyCreateSchema },
     },
   },
   {
     name: 'hevy_update_routine',
     description:
-      'Full replace of a routine (PUT /v1/routines/{id}). Omitted fields are dropped. Write-gated by HEVY_MCP_ALLOW_WRITES (dry-run otherwise).',
+      "Full replace of a routine (PUT /v1/routines/{id}). Omitted fields are dropped — to preserve a field, send it back unchanged. Each exercise needs an exercise_template_id (find via hevy_list_exercise_templates). Note: folder_id is NOT accepted on update; the Hevy API rejects it with 400. The routine's folder cannot be changed through this tool. Dry-run by default: returns { dry_run: true, executed: false, ... } unless HEVY_MCP_ALLOW_WRITES=1 is set on the server process.",
     inputSchema: {
       type: 'object',
       additionalProperties: false,
       required: ['routineId', 'routine'],
       properties: {
         routineId: { type: 'string', format: 'uuid' },
-        routine: routineBodySchema,
+        routine: routineBodyUpdateSchema,
       },
     },
   },
@@ -371,7 +390,7 @@ const TOOLS: Tool[] = [
   {
     name: 'hevy_create_routine_folder',
     description:
-      'Create a routine folder at index 0 (POST /v1/routine_folders). Takes only `title`. Write-gated by HEVY_MCP_ALLOW_WRITES (dry-run otherwise). No DELETE endpoint.',
+      'Create a routine folder (POST /v1/routine_folders). Takes only `title`. The new folder is inserted at index 0; existing folders shift down by one. There is no update or delete tool for folders — once created, the title is fixed. Dry-run by default: returns { dry_run: true, executed: false, ... } unless HEVY_MCP_ALLOW_WRITES=1 is set on the server process.',
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -404,7 +423,7 @@ const TOOLS: Tool[] = [
   {
     name: 'hevy_create_exercise_template',
     description:
-      'Create a custom exercise template (POST /v1/exercise_templates). Type enum: weight_reps, reps_only, duration, distance_duration, bodyweight_weighted, bodyweight_assisted, short_distance_weight, bodyweight_reps. `floors_duration` and `steps_duration` are built-in-only and are rejected here. Muscle groups (20): abdominals, shoulders, biceps, triceps, forearms, quadriceps, hamstrings, calves, glutes, abductors, adductors, lats, upper_back, traps, lower_back, chest, cardio, neck, full_body, other. Equipment (9): none, barbell, dumbbell, kettlebell, machine, plate, resistance_band, suspension, other. Write-gated by HEVY_MCP_ALLOW_WRITES (dry-run otherwise).',
+      'Create a custom exercise template (POST /v1/exercise_templates). Required: title, exercise_type, muscle_group, equipment_category. exercise_type enum (8): weight_reps, reps_only, bodyweight_reps, bodyweight_assisted_reps, duration, weight_duration, distance_duration, short_distance_weight. muscle_group enum (20): abdominals, shoulders, biceps, triceps, forearms, quadriceps, hamstrings, calves, glutes, abductors, adductors, lats, upper_back, traps, lower_back, chest, cardio, neck, full_body, other. equipment_category enum (9): none, barbell, dumbbell, kettlebell, machine, plate, resistance_band, suspension, other. other_muscles is an optional array of muscle_group values. Dry-run by default: returns { dry_run: true, executed: false, ... } unless HEVY_MCP_ALLOW_WRITES=1 is set on the server process.',
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -413,17 +432,16 @@ const TOOLS: Tool[] = [
         exercise: {
           type: 'object',
           additionalProperties: false,
-          required: ['title', 'type', 'primary_muscle_group'],
+          required: ['title', 'exercise_type', 'muscle_group', 'equipment_category'],
           properties: {
             title: { type: 'string', minLength: 1, maxLength: 100 },
-            type: { type: 'string', enum: customExerciseTypeEnum },
-            primary_muscle_group: { type: 'string', enum: muscleGroupEnum },
-            secondary_muscle_groups: {
+            exercise_type: { type: 'string', enum: customExerciseTypeEnum },
+            muscle_group: { type: 'string', enum: muscleGroupEnum },
+            other_muscles: {
               type: 'array',
               items: { type: 'string', enum: muscleGroupEnum },
             },
             equipment_category: { type: 'string', enum: equipmentEnum },
-            is_custom: { type: 'boolean' },
           },
         },
       },
@@ -454,7 +472,7 @@ const TOOLS: Tool[] = [
   {
     name: 'hevy_create_body_measurement',
     description:
-      'Create one body-measurements record (POST /v1/body_measurements). Required: date (YYYY-MM-DD). Metric fields are all optional: weight_kg, lean_mass_kg, fat_percent, neck_cm, shoulder_cm, chest_cm, left_bicep_cm, right_bicep_cm, left_forearm_cm, right_forearm_cm, abdomen, waist, hips, left_thigh, right_thigh, left_calf, right_calf. The server returns 409 if a record already exists for that date (use hevy_update_body_measurement to replace). Quirk: validator runs before auth on this endpoint, so a malformed body with a missing api-key still returns 400. Write-gated by HEVY_MCP_ALLOW_WRITES (dry-run otherwise).',
+      'Create one body-measurements record (POST /v1/body_measurements). Required: date (YYYY-MM-DD). All metric fields are optional and nullable: weight_kg, lean_mass_kg, fat_percent, neck_cm, shoulder_cm, chest_cm, left_bicep_cm, right_bicep_cm, left_forearm_cm, right_forearm_cm, abdomen, waist, hips, left_thigh, right_thigh, left_calf, right_calf. If a record already exists for that date, the server returns 409 — use hevy_update_body_measurement instead. Dry-run by default: returns { dry_run: true, executed: false, ... } unless HEVY_MCP_ALLOW_WRITES=1 is set on the server process.',
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -488,7 +506,7 @@ const TOOLS: Tool[] = [
   {
     name: 'hevy_update_body_measurement',
     description:
-      'Full replace of the body-measurements record for a date (PUT /v1/body_measurements/{date}). Any metric field NOT sent is set to NULL — there is no partial merge; send every field you want to keep. Write-gated by HEVY_MCP_ALLOW_WRITES (dry-run otherwise).',
+      'Full replace of the body-measurements record for a date (PUT /v1/body_measurements/{date}). FULL REPLACE — any metric field NOT sent in body_measurement is overwritten to NULL on the server. To "update just one metric": call hevy_get_body_measurement for that date first, modify the metric you want, then send ALL fields back. Dry-run by default: returns { dry_run: true, executed: false, ... } unless HEVY_MCP_ALLOW_WRITES=1 is set on the server process.',
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -626,7 +644,7 @@ async function dispatch(name: string, rawArgs: unknown): Promise<unknown> {
     }
     case 'hevy_create_exercise_template': {
       const args = validateInput(name, rawArgs);
-      const body = { exercise_template: args.exercise };
+      const body = { exercise: args.exercise };
       const gate = guardWrite('POST', '/v1/exercise_templates', body);
       if (gate) return gate;
       const res = await hevyFetch('/v1/exercise_templates', {

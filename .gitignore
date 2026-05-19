@@ -5,3 +5,4 @@ coverage/
 *.log
 tests/__cache__/
 VERIFICATION.md
+PROGRESS.md

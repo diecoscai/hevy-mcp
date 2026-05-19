@@ -3,6 +3,7 @@
 Model Context Protocol server for the [Hevy](https://www.hevyapp.com/) fitness API. Manage workouts, routines, exercises, and body measurements from any MCP-compatible client — Claude Desktop, Claude Code, Cursor, VS Code, and anything else that speaks MCP over stdio.
 
 [![npm version](https://img.shields.io/npm/v/@diecoscai/hevy-mcp.svg)](https://www.npmjs.com/package/@diecoscai/hevy-mcp)
+[![CI](https://github.com/diecoscai/hevy-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/diecoscai/hevy-mcp/actions/workflows/ci.yml)
 [![license](https://img.shields.io/npm/l/@diecoscai/hevy-mcp.svg)](./LICENSE)
 [![node](https://img.shields.io/node/v/@diecoscai/hevy-mcp.svg)](./package.json)
 
@@ -34,7 +35,7 @@ Design goals:
 
 ## Run from source
 
-While the npm package is being published, you can run the server directly from this repository. This is a regular user path, not a contributor path — contributors should use [Development](#development) below.
+You can also run the server directly from a local clone instead of via `npx`. Useful if you want to pin a specific commit, debug a tool locally, or run an unreleased version. Contributors should use [Development](#development) below instead.
 
 ```bash
 git clone https://github.com/diecoscai/hevy-mcp.git
@@ -256,6 +257,10 @@ mechanism the public API offers for change detection.
 
 If Hevy publishes webhooks in the public OpenAPI spec, subscription tools
 will land here with the same dry-run gate as the other writes.
+
+## Spec ≠ reality
+
+The [public OpenAPI doc](https://api.hevyapp.com/docs/) (self-versioned `0.0.1`) diverges from the live server in several places — wrong wrapper for `POST /v1/exercise_templates`, wrong enum values for `CustomExerciseType`, `folder_id` rejected on `PUT /v1/routines/{id}`, plain-text response on a successful template create, and more. This server implements what the **real** server accepts. The full list of confirmed divergences lives in [`docs/api-quirks.md`](./docs/api-quirks.md) and can be re-verified with the [`scripts/verify-api.sh`](https://github.com/diecoscai/hevy-mcp/blob/main/scripts/verify-api.sh) probe suite (lives in the GitHub repo, not in the npm tarball).
 
 ## Development
 

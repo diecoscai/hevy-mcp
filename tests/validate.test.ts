@@ -209,9 +209,9 @@ describe('validateInput — happy paths', () => {
     const args = {
       exercise: {
         title: 'Safety-bar squat',
-        type: 'weight_reps' as const,
-        primary_muscle_group: 'quadriceps' as const,
-        secondary_muscle_groups: ['glutes' as const],
+        exercise_type: 'weight_reps' as const,
+        muscle_group: 'quadriceps' as const,
+        other_muscles: ['glutes' as const],
         equipment_category: 'barbell' as const,
       },
     };
@@ -267,8 +267,9 @@ describe('validateInput — negative probes', () => {
     const args = {
       exercise: {
         title: 'x'.repeat(101),
-        type: 'weight_reps' as const,
-        primary_muscle_group: 'chest' as const,
+        exercise_type: 'weight_reps' as const,
+        muscle_group: 'chest' as const,
+        equipment_category: 'barbell' as const,
       },
     };
     expect(() => validateInput('hevy_create_exercise_template', args)).toThrow(ValidationError);
@@ -278,8 +279,9 @@ describe('validateInput — negative probes', () => {
     const args = {
       exercise: {
         title: 'x'.repeat(100),
-        type: 'weight_reps' as const,
-        primary_muscle_group: 'chest' as const,
+        exercise_type: 'weight_reps' as const,
+        muscle_group: 'chest' as const,
+        equipment_category: 'barbell' as const,
       },
     };
     expect(validateInput('hevy_create_exercise_template', args).exercise.title.length).toBe(100);
@@ -348,8 +350,9 @@ describe('validateInput — negative probes', () => {
     const args = {
       exercise: {
         title: 'Squat',
-        type: 'weight_reps' as const,
-        primary_muscle_group: 'nonexistent' as unknown as 'chest',
+        exercise_type: 'weight_reps' as const,
+        muscle_group: 'nonexistent' as unknown as 'chest',
+        equipment_category: 'barbell' as const,
       },
     };
     expect(() => validateInput('hevy_create_exercise_template', args)).toThrow(ValidationError);
@@ -389,12 +392,13 @@ describe('validateInput — negative probes', () => {
     expect(() => validateInput('hevy_create_routine', args)).toThrow(ValidationError);
   });
 
-  it('rejects hevy_create_exercise_template with custom-only type floors_duration', () => {
+  it('rejects hevy_create_exercise_template with built-in-only type floors_duration', () => {
     const args = {
       exercise: {
         title: 'Stairs',
-        type: 'floors_duration' as unknown as 'weight_reps',
-        primary_muscle_group: 'cardio' as const,
+        exercise_type: 'floors_duration' as unknown as 'weight_reps',
+        muscle_group: 'cardio' as const,
+        equipment_category: 'machine' as const,
       },
     };
     expect(() => validateInput('hevy_create_exercise_template', args)).toThrow(ValidationError);

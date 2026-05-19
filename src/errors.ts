@@ -47,11 +47,27 @@ function hintFor(code: ErrorCode, err: unknown): string | undefined {
     return 'fix the listed fields and retry; unknown keys are rejected';
   }
   if (code === 'UPSTREAM_ERROR') {
-    const status = (err as HevyApiError).status;
-    if (status === 401) return 'set HEVY_API_KEY to a valid Hevy Pro key';
+    const apiErr = err as HevyApiError;
+    const status = apiErr.status;
+    const body = (apiErr.body ?? '').toLowerCase();
+    if (status === 401) {
+      // Match "pro" only as a whole word (avoids false positives on
+      // "improperly", "approximately", "production", etc.).
+      if (/\bpro\b/.test(body)) {
+        return 'this endpoint requires a Hevy Pro subscription; upgrade at https://hevy.com and retry';
+      }
+      return 'set HEVY_API_KEY to a valid key from https://hevy.com/settings?developer';
+    }
+    if (status === 403) {
+      if (body.includes('limit')) {
+        return 'account limit reached (routines or custom exercises); free up space in the Hevy app and retry';
+      }
+      return 'request forbidden by Hevy; verify the api-key has the expected scopes';
+    }
     if (status === 404) return 'resource not found; verify the id or date';
-    if (status === 409) return 'a record already exists; use the update tool instead';
+    if (status === 409) return 'a record already exists for this date; use the update tool instead';
     if (status === 400) return 'request rejected by Hevy; review the body and enum values';
+    if (status === 429) return 'rate limited by Hevy; wait a few seconds before retrying';
   }
   return undefined;
 }
@@ -102,8 +118,9 @@ export function dryRunResult(
 } {
   const payload = {
     dry_run: true,
+    executed: false,
     would_send: { method, path, ...(body !== undefined ? { body } : {}) },
-    hint: 'set HEVY_MCP_ALLOW_WRITES=1 to execute',
+    hint: 'No network call was made. To execute, add "HEVY_MCP_ALLOW_WRITES": "1" to the env block of your MCP client config and restart the client.',
   };
   return {
     content: [{ type: 'text', text: JSON.stringify(payload) }],

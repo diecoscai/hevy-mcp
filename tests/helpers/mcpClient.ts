@@ -25,6 +25,10 @@ export interface StartOptions {
     pathRegex: string;
     status: number;
     body: unknown;
+    /** If set, fixture only matches when request body deep-equals this. */
+    bodyEquals?: unknown;
+    /** If set, fixture only matches when request body contains all of these keys/values. */
+    bodyContains?: Record<string, unknown>;
   }>;
 }
 
