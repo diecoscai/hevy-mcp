@@ -77,9 +77,11 @@ The OpenAPI spec lists `notes` as a request-only field — confirmed in practice
 
 ## How to re-verify
 
-Run with a valid Hevy Pro `api-key`:
+Clone the GitHub repo (the script is not shipped in the npm tarball — it's a dev tool) and run with a valid Hevy Pro `api-key`:
 
 ```bash
+git clone https://github.com/diecoscai/hevy-mcp.git
+cd hevy-mcp
 HEVY_API_KEY=... bash scripts/verify-api.sh | tee /tmp/hevy-probe.log
 ```
 

@@ -260,7 +260,7 @@ will land here with the same dry-run gate as the other writes.
 
 ## Spec ≠ reality
 
-The [public OpenAPI doc](https://api.hevyapp.com/docs/) (self-versioned `0.0.1`) diverges from the live server in several places — wrong wrapper for `POST /v1/exercise_templates`, wrong enum values for `CustomExerciseType`, `folder_id` rejected on `PUT /v1/routines/{id}`, plain-text response on a successful template create, and more. This server implements what the **real** server accepts. The full list of confirmed divergences lives in [`docs/api-quirks.md`](./docs/api-quirks.md) and can be re-verified with `scripts/verify-api.sh`.
+The [public OpenAPI doc](https://api.hevyapp.com/docs/) (self-versioned `0.0.1`) diverges from the live server in several places — wrong wrapper for `POST /v1/exercise_templates`, wrong enum values for `CustomExerciseType`, `folder_id` rejected on `PUT /v1/routines/{id}`, plain-text response on a successful template create, and more. This server implements what the **real** server accepts. The full list of confirmed divergences lives in [`docs/api-quirks.md`](./docs/api-quirks.md) and can be re-verified with the [`scripts/verify-api.sh`](https://github.com/diecoscai/hevy-mcp/blob/main/scripts/verify-api.sh) probe suite (lives in the GitHub repo, not in the npm tarball).
 
 ## Development
 

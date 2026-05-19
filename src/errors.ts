@@ -51,7 +51,9 @@ function hintFor(code: ErrorCode, err: unknown): string | undefined {
     const status = apiErr.status;
     const body = (apiErr.body ?? '').toLowerCase();
     if (status === 401) {
-      if (body.includes('pro')) {
+      // Match "pro" only as a whole word (avoids false positives on
+      // "improperly", "approximately", "production", etc.).
+      if (/\bpro\b/.test(body)) {
         return 'this endpoint requires a Hevy Pro subscription; upgrade at https://hevy.com and retry';
       }
       return 'set HEVY_API_KEY to a valid key from https://hevy.com/settings?developer';

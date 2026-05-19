@@ -69,6 +69,20 @@ describe('toToolExecutionError', () => {
     expect(payload.hint).not.toMatch(/pro subscription/i);
   });
 
+  it('does not false-positive the Pro hint on substrings like "improperly" or "production"', () => {
+    for (const body of [
+      'Request was improperly formed',
+      'Service in production but unavailable',
+      'Approximately 5 minutes until reset',
+    ]) {
+      const payload = JSON.parse(
+        toToolExecutionError(new HevyApiError(401, body)).content[0].text
+      ) as SepErrorPayload;
+      expect(payload.hint, `body=${body}`).toMatch(/HEVY_API_KEY/);
+      expect(payload.hint, `body=${body}`).not.toMatch(/pro subscription/i);
+    }
+  });
+
   it('emits a 403 limit hint when the body mentions limit', () => {
     const err = new HevyApiError(403, '{"error":"Routine limit exceeded"}');
     const payload = JSON.parse(toToolExecutionError(err).content[0].text) as SepErrorPayload;

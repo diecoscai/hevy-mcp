@@ -8,6 +8,23 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [0.3.0] - 2026-05-18
 
+### Behavior changes (read before upgrading)
+
+- **`notes` and `description` no longer accept empty strings.** v0.2.0
+  forwarded `notes: ""` to Hevy, which returned HTTP 400 with an
+  informative body. v0.3.0 rejects empty strings locally as a
+  `VALIDATION_ERROR` instead. Callers that previously cleared a notes
+  field by sending `""` should omit the field entirely (the Hevy public
+  API has no way to clear an existing `notes` value — this MCP can only
+  send a non-empty replacement or skip the field on update).
+- **`hevy_update_routine` no longer accepts `folder_id`.** Sending it
+  now fails locally as `VALIDATION_ERROR`. Pre-0.3.0 it failed at
+  Hevy with HTTP 400 (`"routine.folder_id" is not allowed`). The
+  routine's folder still cannot be changed via the public API.
+- **`dryRunResult` payload shape changed.** A new `executed: false`
+  field is included alongside `dry_run: true`. Existing fields are
+  unchanged; the `hint` text is more directive.
+
 ### Fixed
 
 - `hevy_create_exercise_template` could never successfully create a template
