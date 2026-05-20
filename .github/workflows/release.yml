@@ -24,6 +24,14 @@ jobs:
           cache: npm
           registry-url: https://registry.npmjs.org
 
+      - name: Update npm
+        # OIDC trusted publishing requires npm >= 11.5.1; Node 20 still
+        # bundles npm 10.x, which publishes without the OIDC exchange and
+        # gets a 404 from the registry.
+        run: |
+          npm install -g npm@latest
+          npm --version
+
       - name: Verify tag matches package.json version
         env:
           REF_NAME: ${{ github.ref_name }}
