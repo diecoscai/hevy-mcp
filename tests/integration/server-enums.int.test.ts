@@ -1,9 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import {
-  CUSTOM_EXERCISE_TYPES,
-  EQUIPMENT_CATEGORIES,
-  MUSCLE_GROUPS,
-} from '../../src/validate.js';
+import { CUSTOM_EXERCISE_TYPES, EQUIPMENT_CATEGORIES, MUSCLE_GROUPS } from '../../src/validate.js';
 
 // Live drift check: probes the Hevy server with deliberately-invalid enum
 // values, parses the `options` array out of the 400 ZodError response, and
