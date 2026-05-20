@@ -65,7 +65,9 @@ describe('resolveApiKey', () => {
   });
 
   it('trims surrounding whitespace', () => {
-    expect(resolveApiKey({ HEVY_API_KEY: `  ${VALID_KEY}\n`, XDG_CONFIG_HOME: tmp })).toBe(VALID_KEY);
+    expect(resolveApiKey({ HEVY_API_KEY: `  ${VALID_KEY}\n`, XDG_CONFIG_HOME: tmp })).toBe(
+      VALID_KEY
+    );
   });
 
   it('throws MissingCredentialsError when env is unset and no config file exists', () => {

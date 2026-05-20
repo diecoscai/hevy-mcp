@@ -17,6 +17,7 @@ import {
 } from './cache.js';
 import { MissingCredentialsError, resolveAllowWrites, resolveApiKey } from './config.js';
 import { dryRunResult, HevyApiError, toToolExecutionError, UnknownToolError } from './errors.js';
+import { runSetup } from './setup.js';
 import { isKnownTool, validateInput } from './validate.js';
 
 const require = createRequire(import.meta.url);
@@ -732,16 +733,19 @@ function printUsage() {
     '',
     'Usage:',
     '  npx @diecoscai/hevy-mcp           Start the MCP server on stdio.',
+    '  npx @diecoscai/hevy-mcp setup     Interactive setup: validate an API key',
+    '                                   and save it to a config file.',
     '  npx @diecoscai/hevy-mcp --help    Show this help.',
     '  npx @diecoscai/hevy-mcp --version Show the installed version.',
     '',
     'Authentication:',
-    '  Set the HEVY_API_KEY environment variable to a key from',
-    '  https://hevy.com/settings?developer. Typically you put it in',
-    '  your MCP client config (Claude Desktop, Cursor, etc.) under',
-    '  the "env" block of the server entry.',
+    '  Easiest path: run `setup` once. It validates your Hevy Pro API key and',
+    '  writes it to a config file the server reads automatically.',
+    '  Alternatively, set the HEVY_API_KEY environment variable (e.g. in the',
+    '  "env" block of your MCP client config). The env var wins over the file.',
     '',
-    'Writes (POST/PUT) require HEVY_MCP_ALLOW_WRITES=1; otherwise they return a dry-run payload.',
+    'Writes (POST/PUT) are dry-run unless enabled — via `setup`, or by setting',
+    'HEVY_MCP_ALLOW_WRITES=1. The env var overrides the config file either way.',
   ];
   console.log(lines.join('\n'));
 }
@@ -771,6 +775,10 @@ async function main() {
   }
   if (cmd === '--version' || cmd === '-v') {
     console.log(`${pkg.name}@${pkg.version}`);
+    return;
+  }
+  if (cmd === 'setup') {
+    await runSetup();
     return;
   }
   if (cmd !== undefined) {
