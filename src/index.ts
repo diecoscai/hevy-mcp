@@ -730,8 +730,11 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
     ) {
       return result as { content: Array<{ type: 'text'; text: string }> };
     }
+    // String results (e.g. the plain-text id from creating an exercise
+    // template) pass through as raw text; objects are JSON-formatted.
+    const text = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
     return {
-      content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+      content: [{ type: 'text', text }],
     };
   } catch (err) {
     return toToolExecutionError(err);

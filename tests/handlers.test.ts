@@ -407,9 +407,9 @@ describe('tool handlers via mocked fetch (subprocess + nock preload)', () => {
       },
     });
     expect(created.isError).toBeFalsy();
-    // The MCP wraps the upstream body via JSON.stringify, so a plain-text
-    // UUID arrives as a JSON-encoded string here.
-    expect(created.content[0].text).toBe('"d0778813-ce6b-4f40-a3ec-a9c0f254e3d3"');
+    // A plain-text upstream body passes through as raw text — no JSON
+    // quoting. Object responses still get JSON-formatted.
+    expect(created.content[0].text).toBe('d0778813-ce6b-4f40-a3ec-a9c0f254e3d3');
   });
 
   it('hevy_get_exercise_history forwards start_date and end_date to the upstream URL', async () => {
