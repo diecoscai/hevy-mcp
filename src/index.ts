@@ -452,7 +452,7 @@ const TOOLS: Tool[] = [
   {
     name: 'hevy_get_exercise_history',
     description:
-      'List every logged set for the given exercise template (one row per set, includes warmups/dropsets/failures). pageSize 1-10.',
+      'List every logged set for the given exercise template (one row per set, includes warmups/dropsets/failures). Two filter modes, combinable: pagination via page (1-indexed) and pageSize (1-10), and date-range filtering via start_date / end_date (ISO-8601 datetimes). Without start_date/end_date, results span all time, newest-first.',
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -460,6 +460,15 @@ const TOOLS: Tool[] = [
       properties: {
         exerciseTemplateId: { type: 'string' },
         ...pageParams,
+        start_date: {
+          type: 'string',
+          description:
+            'Optional ISO-8601 datetime lower bound. Filters history to sets logged on or after this time.',
+        },
+        end_date: {
+          type: 'string',
+          description: 'Optional ISO-8601 datetime upper bound.',
+        },
       },
     },
   },
@@ -658,11 +667,13 @@ async function dispatch(name: string, rawArgs: unknown): Promise<unknown> {
 
     case 'hevy_get_exercise_history': {
       const args = validateInput(name, rawArgs);
-      const page = args.page ?? 1;
-      const pageSize = args.pageSize ?? 10;
-      return hevyFetch(
-        `/v1/exercise_history/${args.exerciseTemplateId}?page=${page}&pageSize=${pageSize}`
-      );
+      const params = new URLSearchParams({
+        page: String(args.page ?? 1),
+        pageSize: String(args.pageSize ?? 10),
+      });
+      if (args.start_date) params.set('start_date', args.start_date);
+      if (args.end_date) params.set('end_date', args.end_date);
+      return hevyFetch(`/v1/exercise_history/${args.exerciseTemplateId}?${params.toString()}`);
     }
 
     case 'hevy_list_body_measurements': {
