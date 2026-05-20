@@ -15,15 +15,16 @@ import {
   templateListKey,
   templateOneKey,
 } from './cache.js';
-import { MissingCredentialsError, resolveApiKey } from './config.js';
+import { MissingCredentialsError, resolveAllowWrites, resolveApiKey } from './config.js';
 import { dryRunResult, HevyApiError, toToolExecutionError, UnknownToolError } from './errors.js';
+import { runSetup } from './setup.js';
 import { isKnownTool, validateInput } from './validate.js';
 
 const require = createRequire(import.meta.url);
 const pkg = require('../package.json') as { name: string; version: string };
 
 const BASE_URL = 'https://api.hevyapp.com';
-const ALLOW_WRITES = process.env.HEVY_MCP_ALLOW_WRITES === '1';
+const ALLOW_WRITES = resolveAllowWrites();
 const CACHE_DISABLED = isCacheDisabled();
 const templateCache: TtlCache<unknown> | null = CACHE_DISABLED ? null : createTemplateCache();
 
@@ -451,7 +452,7 @@ const TOOLS: Tool[] = [
   {
     name: 'hevy_get_exercise_history',
     description:
-      'List every logged set for the given exercise template (one row per set, includes warmups/dropsets/failures). pageSize 1-10.',
+      'List every logged set for the given exercise template (one row per set, includes warmups/dropsets/failures). Two filter modes, combinable: pagination via page (1-indexed) and pageSize (1-10), and date-range filtering via start_date / end_date (ISO-8601 datetimes). Without start_date/end_date, results span all time, newest-first.',
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -459,6 +460,15 @@ const TOOLS: Tool[] = [
       properties: {
         exerciseTemplateId: { type: 'string' },
         ...pageParams,
+        start_date: {
+          type: 'string',
+          description:
+            'Optional ISO-8601 datetime lower bound. Filters history to sets logged on or after this time.',
+        },
+        end_date: {
+          type: 'string',
+          description: 'Optional ISO-8601 datetime upper bound.',
+        },
       },
     },
   },
@@ -657,11 +667,13 @@ async function dispatch(name: string, rawArgs: unknown): Promise<unknown> {
 
     case 'hevy_get_exercise_history': {
       const args = validateInput(name, rawArgs);
-      const page = args.page ?? 1;
-      const pageSize = args.pageSize ?? 10;
-      return hevyFetch(
-        `/v1/exercise_history/${args.exerciseTemplateId}?page=${page}&pageSize=${pageSize}`
-      );
+      const params = new URLSearchParams({
+        page: String(args.page ?? 1),
+        pageSize: String(args.pageSize ?? 10),
+      });
+      if (args.start_date) params.set('start_date', args.start_date);
+      if (args.end_date) params.set('end_date', args.end_date);
+      return hevyFetch(`/v1/exercise_history/${args.exerciseTemplateId}?${params.toString()}`);
     }
 
     case 'hevy_list_body_measurements': {
@@ -718,8 +730,11 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
     ) {
       return result as { content: Array<{ type: 'text'; text: string }> };
     }
+    // String results (e.g. the plain-text id from creating an exercise
+    // template) pass through as raw text; objects are JSON-formatted.
+    const text = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
     return {
-      content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+      content: [{ type: 'text', text }],
     };
   } catch (err) {
     return toToolExecutionError(err);
@@ -732,16 +747,19 @@ function printUsage() {
     '',
     'Usage:',
     '  npx @diecoscai/hevy-mcp           Start the MCP server on stdio.',
+    '  npx @diecoscai/hevy-mcp setup     Interactive setup: validate an API key',
+    '                                   and save it to a config file.',
     '  npx @diecoscai/hevy-mcp --help    Show this help.',
     '  npx @diecoscai/hevy-mcp --version Show the installed version.',
     '',
     'Authentication:',
-    '  Set the HEVY_API_KEY environment variable to a key from',
-    '  https://hevy.com/settings?developer. Typically you put it in',
-    '  your MCP client config (Claude Desktop, Cursor, etc.) under',
-    '  the "env" block of the server entry.',
+    '  Easiest path: run `setup` once. It validates your Hevy Pro API key and',
+    '  writes it to a config file the server reads automatically.',
+    '  Alternatively, set the HEVY_API_KEY environment variable (e.g. in the',
+    '  "env" block of your MCP client config). The env var wins over the file.',
     '',
-    'Writes (POST/PUT) require HEVY_MCP_ALLOW_WRITES=1; otherwise they return a dry-run payload.',
+    'Writes (POST/PUT) are dry-run unless enabled — via `setup`, or by setting',
+    'HEVY_MCP_ALLOW_WRITES=1. The env var overrides the config file either way.',
   ];
   console.log(lines.join('\n'));
 }
@@ -771,6 +789,10 @@ async function main() {
   }
   if (cmd === '--version' || cmd === '-v') {
     console.log(`${pkg.name}@${pkg.version}`);
+    return;
+  }
+  if (cmd === 'setup') {
+    await runSetup();
     return;
   }
   if (cmd !== undefined) {

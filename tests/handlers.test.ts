@@ -407,8 +407,33 @@ describe('tool handlers via mocked fetch (subprocess + nock preload)', () => {
       },
     });
     expect(created.isError).toBeFalsy();
-    // The MCP wraps the upstream body via JSON.stringify, so a plain-text
-    // UUID arrives as a JSON-encoded string here.
-    expect(created.content[0].text).toBe('"d0778813-ce6b-4f40-a3ec-a9c0f254e3d3"');
+    // A plain-text upstream body passes through as raw text — no JSON
+    // quoting. Object responses still get JSON-formatted.
+    expect(created.content[0].text).toBe('d0778813-ce6b-4f40-a3ec-a9c0f254e3d3');
+  });
+
+  it('hevy_get_exercise_history forwards start_date and end_date to the upstream URL', async () => {
+    client = startMcpServer({
+      env: { HEVY_API_KEY: 'test-key' },
+      preload: PRELOAD,
+      fixtures: [
+        {
+          method: 'GET',
+          pathRegex:
+            '^/v1/exercise_history/79D0BB3A\\?(?=.*\\bpage=1\\b)(?=.*\\bpageSize=10\\b)(?=.*start_date=2024-01-01)(?=.*end_date=2024-12-31)',
+          status: 200,
+          body: { exercise_history: [] },
+        },
+      ],
+    });
+    await initializeClient(client);
+    const result = await callTool(client, 'hevy_get_exercise_history', {
+      exerciseTemplateId: BUILT_IN_TEMPLATE_ID,
+      start_date: '2024-01-01T00:00:00Z',
+      end_date: '2024-12-31T23:59:59Z',
+    });
+    // If the URL omitted either date param, nock would not match and this
+    // would surface as UPSTREAM_ERROR.
+    expect(result.isError).toBeFalsy();
   });
 });

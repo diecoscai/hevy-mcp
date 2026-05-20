@@ -15,10 +15,10 @@ jobs:
       id-token: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js 20
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '20'
           cache: npm
@@ -54,8 +54,6 @@ jobs:
 
       - name: Publish to npm (OIDC trusted publishing + provenance)
         # Auth is via OIDC trusted publishing configured in the npm package
-        # settings — no NPM_TOKEN env var needed. The id-token: write
-        # permission above lets setup-node mint an OIDC token that npm
-        # exchanges for a short-lived publish credential.
+        # settings — no NPM_TOKEN env var needed.
         # Setup docs: https://docs.npmjs.com/trusted-publishers
         run: npm publish --provenance

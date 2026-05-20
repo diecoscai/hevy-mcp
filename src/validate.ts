@@ -271,6 +271,8 @@ const schemas = {
       exerciseTemplateId: exerciseTemplateIdSchema,
       page: pageSchema.optional(),
       pageSize: pageSizeSchema.optional(),
+      start_date: isoDateTimeSchema.optional(),
+      end_date: isoDateTimeSchema.optional(),
     })
     .strict(),
 

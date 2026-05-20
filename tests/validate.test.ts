@@ -230,6 +230,25 @@ describe('validateInput — happy paths', () => {
     ).toBe(BUILT_IN_TEMPLATE_ID);
   });
 
+  it('accepts hevy_get_exercise_history with start_date and end_date', () => {
+    const out = validateInput('hevy_get_exercise_history', {
+      exerciseTemplateId: BUILT_IN_TEMPLATE_ID,
+      start_date: '2024-01-01T00:00:00Z',
+      end_date: '2024-12-31T23:59:59Z',
+    });
+    expect(out.start_date).toBe('2024-01-01T00:00:00Z');
+    expect(out.end_date).toBe('2024-12-31T23:59:59Z');
+  });
+
+  it('rejects hevy_get_exercise_history with a malformed start_date', () => {
+    expect(() =>
+      validateInput('hevy_get_exercise_history', {
+        exerciseTemplateId: BUILT_IN_TEMPLATE_ID,
+        start_date: 'not-a-date',
+      })
+    ).toThrow(ValidationError);
+  });
+
   it('accepts hevy_list_body_measurements', () => {
     const out = validateInput('hevy_list_body_measurements', {});
     expect(out.page).toBe(1);

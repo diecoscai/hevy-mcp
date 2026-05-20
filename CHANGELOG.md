@@ -6,7 +6,51 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
-## [0.3.0] - 2026-05-18
+## [0.4.0] - 2026-05-20
+
+### Behavior changes (read before upgrading)
+
+- **Plain-text upstream responses now pass through as raw text.** v0.3.0
+  JSON-stringified every result, so the bare id returned by
+  `POST /v1/exercise_templates` arrived as `text: "\"<uuid>\""` (literal
+  quote characters). v0.4.0 passes string results through unchanged.
+  Callers that did `JSON.parse(content[0].text)` on the
+  `hevy_create_exercise_template` response should drop the parse step.
+  Every other tool returns JSON and is unaffected.
+
+### Added
+
+- **`setup` subcommand** — `npx @diecoscai/hevy-mcp setup` runs an
+  interactive flow: prompts for the API key, validates it live against
+  `GET /v1/user/info`, asks whether to enable writes, and saves
+  everything to `~/.config/hevy-mcp/config.json` (mode `0600`). After
+  setup the MCP client entry needs no `env` block at all.
+- **On-disk config file.** The server reads `apiKey` and `allowWrites`
+  from `$XDG_CONFIG_HOME/hevy-mcp/config.json` when the matching env var
+  is absent. Environment variables always take precedence, so an MCP
+  client's `env` block can still override either value.
+- `hevy_get_exercise_history` accepts two optional ISO-8601 datetime
+  query params, `start_date` and `end_date`, combinable with pagination.
+- `tests/integration/server-enums.int.test.ts` — live enum drift check
+  that asserts the MCP's `MUSCLE_GROUPS`, `EQUIPMENT_CATEGORIES`, and
+  `CUSTOM_EXERCISE_TYPES` match what the Hevy server accepts. Skipped
+  without `HEVY_API_KEY`.
+
+### Changed
+
+- The CallTool envelope emits string dispatch results as raw text
+  instead of JSON-stringifying them (see Behavior changes).
+- `hevy_get_exercise_history` description documents the date-range mode.
+- `MissingCredentialsError` message mentions the `setup` subcommand.
+- README, `docs/configuration.md`, and `docs/api-quirks.md` document the
+  `setup` flow, the config file, and the env-var precedence rule.
+
+### Internal
+
+- CI matrix now covers Node 20 / 22 / 24; `actions/checkout` and
+  `actions/setup-node` bumped to v5 (Node 20 actions are deprecated).
+
+## [0.3.0] - 2026-05-20
 
 ### Behavior changes (read before upgrading)
 
@@ -162,7 +206,8 @@ Initial public release.
   (moderate: JSX SSR HTML injection). The SDK's peer range accepts the
   fix without a breaking bump.
 
-[Unreleased]: https://github.com/diecoscai/hevy-mcp/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/diecoscai/hevy-mcp/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/diecoscai/hevy-mcp/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/diecoscai/hevy-mcp/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/diecoscai/hevy-mcp/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/diecoscai/hevy-mcp/releases/tag/v0.1.0

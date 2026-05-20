@@ -10,15 +10,23 @@ All MCP clients launch the server as a stdio subprocess. The recommended invocat
 - `npx` transparently caches the package; subsequent launches are fast.
 - Pinning a version (e.g. `@diecoscai/hevy-mcp@0.3.0`) in the client config is recommended for production setups. Check the [latest version on npm](https://www.npmjs.com/package/@diecoscai/hevy-mcp).
 
-### Where does the API key come from?
+### Two ways to configure the server
 
-Authentication is a single environment variable — `HEVY_API_KEY` — passed through your MCP client's `env` block. If it is missing or empty, the server exits with code `1` and an error that names the variable and the URL to generate a key.
+**A. The `setup` subcommand (recommended).** Run it once in a terminal:
 
-There is no local config file, no wizard, and no cache. Rotating the key means editing your client config and restarting the client.
+```bash
+npx @diecoscai/hevy-mcp setup
+```
+
+It prompts for your API key, validates it against `GET /v1/user/info`, asks whether to enable writes, and saves both to `~/.config/hevy-mcp/config.json` (or `$XDG_CONFIG_HOME/hevy-mcp/config.json`) with permissions `0600`. After that, the MCP client entry needs no `env` block — every client snippet below works with the `env` block removed.
+
+**B. Environment variables.** Pass `HEVY_API_KEY` (and optionally `HEVY_MCP_ALLOW_WRITES`) through the `env` block of the MCP client config, as shown in the per-client snippets below.
+
+**Precedence:** environment variables always win over the config file. An `env` block can therefore override a `setup`-saved key, or force writes on/off, per client. If neither source provides a key, the server exits with code `1` and an error naming the variable, the `setup` command, and the URL to generate a key.
 
 ### Enabling writes
 
-The write-gate is **per-process**. Set `HEVY_MCP_ALLOW_WRITES=1` in the same `env` block as `HEVY_API_KEY`; without it, `POST` / `PUT` tools return a dry-run payload.
+Writes are off by default — `POST` / `PUT` tools return a dry-run payload. Enable them either by answering "yes" during `setup`, or by setting `HEVY_MCP_ALLOW_WRITES=1` in the `env` block. An explicit env value overrides the config file in either direction (`HEVY_MCP_ALLOW_WRITES=0` forces dry-run even if the config file enables writes).
 
 ---
 
