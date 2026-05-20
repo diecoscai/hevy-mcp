@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -55,6 +55,21 @@ describe('userConfig', () => {
     const p = writeUserConfig({ apiKey: 'k', allowWrites: false }, env);
     const mode = statSync(p).mode & 0o777;
     expect(mode).toBe(0o600);
+  });
+
+  it('writeUserConfig creates the config directory with 0700 permissions', () => {
+    const env = { XDG_CONFIG_HOME: tmp };
+    writeUserConfig({ apiKey: 'k', allowWrites: false }, env);
+    const mode = statSync(configDir(env)).mode & 0o777;
+    expect(mode).toBe(0o700);
+  });
+
+  it('writeUserConfig re-enforces 0600 when overwriting an existing file', () => {
+    const env = { XDG_CONFIG_HOME: tmp };
+    const p = writeUserConfig({ apiKey: 'first', allowWrites: false }, env);
+    chmodSync(p, 0o644);
+    writeUserConfig({ apiKey: 'second', allowWrites: true }, env);
+    expect(statSync(p).mode & 0o777).toBe(0o600);
   });
 
   it('readUserConfig coerces a non-true allowWrites to false', () => {
