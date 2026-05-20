@@ -25,13 +25,32 @@ Design goals:
 
 ## Quick setup
 
-1. Grab your API key at <https://hevy.com/settings?developer> (requires Hevy Pro).
-2. Paste the snippet for your MCP client from [Configuration](#configuration) below, substituting your key into the `HEVY_API_KEY` entry.
-3. Restart the client. The 22 Hevy tools appear in the tools panel.
+The fastest path is the `setup` subcommand — it validates your key and writes a config file the server picks up automatically:
 
-> **Note on bare invocation.** Running `npx @diecoscai/hevy-mcp` with no arguments starts a stdio MCP server and blocks, waiting for an MCP client to connect over its stdin/stdout. You don't run it in a terminal yourself — your MCP client spawns it. Use `npx @diecoscai/hevy-mcp --help` or `--version` if you want a non-blocking invocation.
+```bash
+npx @diecoscai/hevy-mcp setup
+```
 
-> **Write tools are dry-run by default.** The first time you ask the server to create or update anything (a workout, a routine, a body measurement) you'll see a preview payload, not a real change. Set `HEVY_MCP_ALLOW_WRITES=1` in the same `env` block to execute writes — see [Safety](#safety--dry-run-writes).
+It prompts for your Hevy Pro API key (from <https://hevy.com/settings?developer>), checks it against the live API, asks whether to enable write operations, and saves everything to `~/.config/hevy-mcp/config.json` (mode `0600`). Then add the server to your MCP client with **no env block needed**:
+
+```json
+{
+  "mcpServers": {
+    "hevy": {
+      "command": "npx",
+      "args": ["-y", "@diecoscai/hevy-mcp"]
+    }
+  }
+}
+```
+
+Restart the client — the 22 Hevy tools appear in the tools panel.
+
+**Prefer environment variables?** Skip `setup` and pass `HEVY_API_KEY` (and optionally `HEVY_MCP_ALLOW_WRITES=1`) in the `env` block instead — see [Configuration](#configuration). Env vars always take precedence over the config file.
+
+> **Note on bare invocation.** Running `npx @diecoscai/hevy-mcp` with no arguments starts a stdio MCP server and blocks, waiting for an MCP client to connect over its stdin/stdout. You don't run it in a terminal yourself — your MCP client spawns it. Use `npx @diecoscai/hevy-mcp --help`, `--version`, or `setup` for a non-blocking invocation.
+
+> **Write tools are dry-run by default.** The first time you ask the server to create or update anything (a workout, a routine, a body measurement) you'll see a preview payload, not a real change. Enable writes by answering "yes" during `setup`, or by setting `HEVY_MCP_ALLOW_WRITES=1` in the `env` block — see [Safety](#safety--dry-run-writes).
 
 ## Run from source
 
@@ -220,10 +239,12 @@ The server exposes 22 tools grouped by resource. See [`docs/tools.md`](./docs/to
 
 | Name | Required | Description |
 | --- | --- | --- |
-| `HEVY_API_KEY` | required | Hevy Pro API key (UUID v4). Typically passed through the `env` block of your MCP client config. |
+| `HEVY_API_KEY` | required* | Hevy Pro API key (UUID v4). Typically passed through the `env` block of your MCP client config. |
 | `HEVY_MCP_ALLOW_WRITES` | optional | Set to `1` to enable real `POST` / `PUT` calls. Any other value (including unset) keeps dry-run on. |
 | `HEVY_MCP_DISABLE_CACHE` | optional | Set to `1` to disable the in-memory exercise-template cache (see below). |
 | `HEVY_MCP_CACHE_TTL_SECONDS` | optional | Cache TTL in seconds. Default `3600`. Ignored when the cache is disabled. |
+
+\* `HEVY_API_KEY` is required *unless* you ran `npx @diecoscai/hevy-mcp setup`, which saves the key (and the writes setting) to `~/.config/hevy-mcp/config.json`. Resolution order: the env var wins; the config file is the fallback. The same precedence applies to `HEVY_MCP_ALLOW_WRITES` vs the file's `allowWrites`.
 
 ## Exercise-template cache
 
