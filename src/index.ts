@@ -24,6 +24,7 @@ const require = createRequire(import.meta.url);
 const pkg = require('../package.json') as { name: string; version: string };
 
 const BASE_URL = 'https://api.hevyapp.com';
+const HTTP_TIMEOUT_MS = 30_000;
 const ALLOW_WRITES = resolveAllowWrites();
 const CACHE_DISABLED = isCacheDisabled();
 const templateCache: TtlCache<unknown> | null = CACHE_DISABLED ? null : createTemplateCache();
@@ -34,6 +35,9 @@ async function hevyFetch(path: string, options: RequestInit = {}): Promise<unkno
   const apiKey = API_KEY;
   const res = await fetch(`${BASE_URL}${path}`, {
     ...options,
+    // Bound every request so a hung upstream cannot stall the MCP call
+    // indefinitely. Callers may still pass their own signal.
+    signal: options.signal ?? AbortSignal.timeout(HTTP_TIMEOUT_MS),
     headers: {
       'api-key': apiKey,
       'Content-Type': 'application/json',
@@ -558,7 +562,7 @@ async function dispatch(name: string, rawArgs: unknown): Promise<unknown> {
     }
     case 'hevy_get_workout': {
       const args = validateInput(name, rawArgs);
-      return hevyFetch(`/v1/workouts/${args.workoutId}`);
+      return hevyFetch(`/v1/workouts/${encodeURIComponent(args.workoutId)}`);
     }
     case 'hevy_get_workout_count': {
       validateInput(name, rawArgs);
@@ -582,7 +586,7 @@ async function dispatch(name: string, rawArgs: unknown): Promise<unknown> {
     case 'hevy_update_workout': {
       const args = validateInput(name, rawArgs);
       const body = { workout: args.workout };
-      const path = `/v1/workouts/${args.workoutId}`;
+      const path = `/v1/workouts/${encodeURIComponent(args.workoutId)}`;
       const gate = guardWrite('PUT', path, body);
       if (gate) return gate;
       return hevyFetch(path, { method: 'PUT', body: JSON.stringify(body) });
@@ -596,7 +600,7 @@ async function dispatch(name: string, rawArgs: unknown): Promise<unknown> {
     }
     case 'hevy_get_routine': {
       const args = validateInput(name, rawArgs);
-      return hevyFetch(`/v1/routines/${args.routineId}`);
+      return hevyFetch(`/v1/routines/${encodeURIComponent(args.routineId)}`);
     }
     case 'hevy_create_routine': {
       const args = validateInput(name, rawArgs);
@@ -608,7 +612,7 @@ async function dispatch(name: string, rawArgs: unknown): Promise<unknown> {
     case 'hevy_update_routine': {
       const args = validateInput(name, rawArgs);
       const body = { routine: args.routine };
-      const path = `/v1/routines/${args.routineId}`;
+      const path = `/v1/routines/${encodeURIComponent(args.routineId)}`;
       const gate = guardWrite('PUT', path, body);
       if (gate) return gate;
       return hevyFetch(path, { method: 'PUT', body: JSON.stringify(body) });
@@ -622,7 +626,7 @@ async function dispatch(name: string, rawArgs: unknown): Promise<unknown> {
     }
     case 'hevy_get_routine_folder': {
       const args = validateInput(name, rawArgs);
-      return hevyFetch(`/v1/routine_folders/${args.folderId}`);
+      return hevyFetch(`/v1/routine_folders/${encodeURIComponent(String(args.folderId))}`);
     }
     case 'hevy_create_routine_folder': {
       const args = validateInput(name, rawArgs);
@@ -648,7 +652,9 @@ async function dispatch(name: string, rawArgs: unknown): Promise<unknown> {
       const key = templateOneKey(args.exerciseTemplateId);
       const cached = templateCache?.get(key);
       if (cached !== undefined) return cached;
-      const res = await hevyFetch(`/v1/exercise_templates/${args.exerciseTemplateId}`);
+      const res = await hevyFetch(
+        `/v1/exercise_templates/${encodeURIComponent(args.exerciseTemplateId)}`
+      );
       templateCache?.set(key, res);
       return res;
     }
@@ -673,7 +679,9 @@ async function dispatch(name: string, rawArgs: unknown): Promise<unknown> {
       });
       if (args.start_date) params.set('start_date', args.start_date);
       if (args.end_date) params.set('end_date', args.end_date);
-      return hevyFetch(`/v1/exercise_history/${args.exerciseTemplateId}?${params.toString()}`);
+      return hevyFetch(
+        `/v1/exercise_history/${encodeURIComponent(args.exerciseTemplateId)}?${params.toString()}`
+      );
     }
 
     case 'hevy_list_body_measurements': {
@@ -693,11 +701,11 @@ async function dispatch(name: string, rawArgs: unknown): Promise<unknown> {
     }
     case 'hevy_get_body_measurement': {
       const args = validateInput(name, rawArgs);
-      return hevyFetch(`/v1/body_measurements/${args.date}`);
+      return hevyFetch(`/v1/body_measurements/${encodeURIComponent(args.date)}`);
     }
     case 'hevy_update_body_measurement': {
       const args = validateInput(name, rawArgs);
-      const path = `/v1/body_measurements/${args.date}`;
+      const path = `/v1/body_measurements/${encodeURIComponent(args.date)}`;
       const body = args.body_measurement;
       const gate = guardWrite('PUT', path, body);
       if (gate) return gate;

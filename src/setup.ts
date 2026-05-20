@@ -15,7 +15,10 @@ export interface KeyCheck {
 export async function validateApiKey(key: string): Promise<KeyCheck> {
   let res: Response;
   try {
-    res = await fetch(`${BASE_URL}/v1/user/info`, { headers: { 'api-key': key } });
+    res = await fetch(`${BASE_URL}/v1/user/info`, {
+      headers: { 'api-key': key },
+      signal: AbortSignal.timeout(15_000),
+    });
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }

@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
@@ -44,7 +44,7 @@ export function readUserConfig(env: NodeJS.ProcessEnv = process.env): UserConfig
 
 export function writeUserConfig(cfg: UserConfig, env: NodeJS.ProcessEnv = process.env): string {
   const dir = configDir(env);
-  mkdirSync(dir, { recursive: true });
+  mkdirSync(dir, { recursive: true, mode: 0o700 });
   const path = configPath(env);
   const body = JSON.stringify(
     { apiKey: cfg.apiKey ?? '', allowWrites: cfg.allowWrites === true },
@@ -52,5 +52,8 @@ export function writeUserConfig(cfg: UserConfig, env: NodeJS.ProcessEnv = proces
     2
   );
   writeFileSync(path, `${body}\n`, { mode: 0o600 });
+  // writeFileSync's mode only applies on creation — enforce 0600 on
+  // overwrite of an existing (possibly looser) file too.
+  chmodSync(path, 0o600);
   return path;
 }

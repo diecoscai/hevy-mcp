@@ -3,7 +3,7 @@
   "name": "io.github.diecoscai/hevy-mcp",
   "title": "Hevy MCP",
   "description": "MCP server for the Hevy fitness API. Workouts, routines, exercises, and body measurements.",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "repository": {
     "url": "https://github.com/diecoscai/hevy-mcp",
     "source": "github"
@@ -12,7 +12,7 @@
     {
       "registryType": "npm",
       "identifier": "@diecoscai/hevy-mcp",
-      "version": "0.4.0",
+      "version": "0.4.1",
       "transport": {
         "type": "stdio"
       }

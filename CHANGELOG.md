@@ -6,6 +6,27 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-05-20
+
+### Security
+
+Hardening from an independent security review of v0.4.0. The review
+found **no Critical or High issues**; these address the Medium and Low
+findings.
+
+- **Request timeouts.** `hevyFetch` (30 s) and the `setup` key check
+  (15 s) now bound every HTTP request with `AbortSignal.timeout`. A
+  hung or slow Hevy upstream can no longer stall an MCP call — or the
+  client waiting on it — indefinitely. (Medium)
+- **URL-escaped path parameters.** Workout / routine / folder /
+  exercise-template ids and dates are `encodeURIComponent`-escaped
+  before being interpolated into request paths. The strict Zod schemas
+  already made injection impossible; this is defense in depth. (Low)
+- **Config directory permissions.** `~/.config/hevy-mcp` is now created
+  with `0700`, and `writeUserConfig` re-applies `0600` to the config
+  file on overwrite (Node's `writeFileSync` mode only applies on
+  creation). (Low)
+
 ## [0.4.0] - 2026-05-20
 
 ### Behavior changes (read before upgrading)
@@ -206,7 +227,8 @@ Initial public release.
   (moderate: JSX SSR HTML injection). The SDK's peer range accepts the
   fix without a breaking bump.
 
-[Unreleased]: https://github.com/diecoscai/hevy-mcp/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/diecoscai/hevy-mcp/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/diecoscai/hevy-mcp/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/diecoscai/hevy-mcp/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/diecoscai/hevy-mcp/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/diecoscai/hevy-mcp/compare/v0.1.0...v0.2.0
