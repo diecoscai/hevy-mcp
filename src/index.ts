@@ -15,7 +15,7 @@ import {
   templateListKey,
   templateOneKey,
 } from './cache.js';
-import { MissingCredentialsError, resolveApiKey } from './config.js';
+import { MissingCredentialsError, resolveAllowWrites, resolveApiKey } from './config.js';
 import { dryRunResult, HevyApiError, toToolExecutionError, UnknownToolError } from './errors.js';
 import { isKnownTool, validateInput } from './validate.js';
 
@@ -23,7 +23,7 @@ const require = createRequire(import.meta.url);
 const pkg = require('../package.json') as { name: string; version: string };
 
 const BASE_URL = 'https://api.hevyapp.com';
-const ALLOW_WRITES = process.env.HEVY_MCP_ALLOW_WRITES === '1';
+const ALLOW_WRITES = resolveAllowWrites();
 const CACHE_DISABLED = isCacheDisabled();
 const templateCache: TtlCache<unknown> | null = CACHE_DISABLED ? null : createTemplateCache();
 
