@@ -79,8 +79,8 @@ describe('enum fixtures', () => {
     expect(CUSTOM_EXERCISE_TYPES).not.toContain('steps_duration');
   });
 
-  it('exposes 22 tool names', () => {
-    expect(TOOL_NAMES.length).toBe(22);
+  it('exposes 23 tool names', () => {
+    expect(TOOL_NAMES.length).toBe(23);
   });
 });
 

@@ -412,6 +412,126 @@ describe('tool handlers via mocked fetch (subprocess + nock preload)', () => {
     expect(created.content[0].text).toBe('d0778813-ce6b-4f40-a3ec-a9c0f254e3d3');
   });
 
+  it('hevy_search_exercise_templates paginates and filters by title', async () => {
+    client = startMcpServer({
+      env: { HEVY_API_KEY: 'test-key' },
+      preload: PRELOAD,
+      fixtures: [
+        {
+          method: 'GET',
+          pathRegex: '^/v1/exercise_templates\\?(?=.*\\bpage=1\\b)(?=.*\\bpageSize=100\\b)',
+          status: 200,
+          body: {
+            page: 1,
+            page_count: 2,
+            exercise_templates: [
+              { id: 'AAAAAAAA', title: 'Bench Press (Barbell)' },
+              { id: 'BBBBBBBB', title: 'Squat (Barbell)' },
+            ],
+          },
+        },
+        {
+          method: 'GET',
+          pathRegex: '^/v1/exercise_templates\\?(?=.*\\bpage=2\\b)(?=.*\\bpageSize=100\\b)',
+          status: 200,
+          body: {
+            page: 2,
+            page_count: 2,
+            exercise_templates: [{ id: 'CCCCCCCC', title: 'Incline Bench Press (Dumbbell)' }],
+          },
+        },
+      ],
+    });
+    await initializeClient(client);
+    const result = await callTool(client, 'hevy_search_exercise_templates', {
+      query: 'bench press',
+    });
+    expect(result.isError).toBeFalsy();
+    const parsed = JSON.parse(result.content[0].text) as {
+      total_matches: number;
+      exercise_templates: Array<{ id: string }>;
+    };
+    expect(parsed.total_matches).toBe(2);
+    expect(parsed.exercise_templates.map((t) => t.id).sort()).toEqual(['AAAAAAAA', 'CCCCCCCC']);
+  });
+
+  it('hevy_search_exercise_templates returns empty for a query that matches nothing', async () => {
+    client = startMcpServer({
+      env: { HEVY_API_KEY: 'test-key' },
+      preload: PRELOAD,
+      fixtures: [
+        {
+          method: 'GET',
+          pathRegex: '^/v1/exercise_templates\\?(?=.*\\bpage=1\\b)(?=.*\\bpageSize=100\\b)',
+          status: 200,
+          body: {
+            page: 1,
+            page_count: 1,
+            exercise_templates: [
+              { id: 'AAAAAAAA', title: 'Bench Press (Barbell)' },
+              { id: 'BBBBBBBB', title: 'Squat (Barbell)' },
+            ],
+          },
+        },
+      ],
+    });
+    await initializeClient(client);
+    const result = await callTool(client, 'hevy_search_exercise_templates', {
+      query: 'no such exercise',
+    });
+    expect(result.isError).toBeFalsy();
+    const parsed = JSON.parse(result.content[0].text) as {
+      total_matches: number;
+      exercise_templates: unknown[];
+    };
+    expect(parsed.total_matches).toBe(0);
+    expect(parsed.exercise_templates).toEqual([]);
+  });
+
+  it('hevy_search_exercise_templates honors limit while total_matches reports the full count', async () => {
+    client = startMcpServer({
+      env: { HEVY_API_KEY: 'test-key' },
+      preload: PRELOAD,
+      fixtures: [
+        {
+          method: 'GET',
+          pathRegex: '^/v1/exercise_templates\\?(?=.*\\bpage=1\\b)(?=.*\\bpageSize=100\\b)',
+          status: 200,
+          body: {
+            page: 1,
+            page_count: 2,
+            exercise_templates: [
+              { id: 'AAAAAAAA', title: 'Bench Press (Barbell)' },
+              { id: 'BBBBBBBB', title: 'Squat (Barbell)' },
+            ],
+          },
+        },
+        {
+          method: 'GET',
+          pathRegex: '^/v1/exercise_templates\\?(?=.*\\bpage=2\\b)(?=.*\\bpageSize=100\\b)',
+          status: 200,
+          body: {
+            page: 2,
+            page_count: 2,
+            exercise_templates: [{ id: 'CCCCCCCC', title: 'Incline Bench Press (Dumbbell)' }],
+          },
+        },
+      ],
+    });
+    await initializeClient(client);
+    const result = await callTool(client, 'hevy_search_exercise_templates', {
+      query: 'bench press',
+      limit: 1,
+    });
+    expect(result.isError).toBeFalsy();
+    const parsed = JSON.parse(result.content[0].text) as {
+      total_matches: number;
+      exercise_templates: Array<{ id: string }>;
+    };
+    expect(parsed.total_matches).toBe(2);
+    expect(parsed.exercise_templates.length).toBe(1);
+  });
+
   it('hevy_get_exercise_history forwards start_date and end_date to the upstream URL', async () => {
     client = startMcpServer({
       env: { HEVY_API_KEY: 'test-key' },

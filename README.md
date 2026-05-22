@@ -181,7 +181,7 @@ The Hevy API has **no `DELETE` endpoint** on any resource. A bad write cannot be
 
 ## Tool reference (summary)
 
-The server exposes 22 tools grouped by resource. See [`docs/tools.md`](./docs/tools.md) for input schemas and examples.
+The server exposes 23 tools grouped by resource. See [`docs/tools.md`](./docs/tools.md) for input schemas and examples.
 
 ### User
 
@@ -222,6 +222,7 @@ The server exposes 22 tools grouped by resource. See [`docs/tools.md`](./docs/to
 | Tool | Description |
 | --- | --- |
 | `hevy_list_exercise_templates` | Paginated exercise library — the only list that accepts `pageSize` up to 100. |
+| `hevy_search_exercise_templates` | Search templates by name (case-insensitive substring). Resolves a human name (e.g. "bench press") to an `exercise_template_id`. Paginates the full catalog; results cached for an hour. |
 | `hevy_get_exercise_template` | Fetch one template by id (8-char hex for built-ins, UUID for custom). |
 | `hevy_create_exercise_template` | Create a custom exercise (write — dry-run default). |
 | `hevy_get_exercise_history` | All logged sets for a given exercise template. |

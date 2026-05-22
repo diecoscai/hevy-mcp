@@ -22,9 +22,9 @@ describe.skipIf(!process.env.HEVY_API_KEY)('Hevy live integration (read-only)', 
     client?.close();
   });
 
-  it('tools/list returns 22 tools', async () => {
+  it('tools/list returns 23 tools', async () => {
     const tools = await listTools(client);
-    expect(tools.length).toBe(22);
+    expect(tools.length).toBe(23);
   });
 
   it('hevy_get_user_info returns a non-empty id and name', async () => {

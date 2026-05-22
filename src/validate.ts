@@ -270,6 +270,12 @@ const schemas = {
   hevy_list_exercise_templates: z
     .object({ page: pageSchema.optional(), pageSize: pageSizeLargeSchema.optional() })
     .strict(),
+  hevy_search_exercise_templates: z
+    .object({
+      query: z.string().min(1).max(100),
+      limit: z.coerce.number().int().min(1).max(100).optional(),
+    })
+    .strict(),
   hevy_get_exercise_template: z.object({ exerciseTemplateId: exerciseTemplateIdSchema }).strict(),
   hevy_create_exercise_template: z.object({ exercise: exerciseTemplateCreateSchema }).strict(),
 
