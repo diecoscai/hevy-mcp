@@ -3,7 +3,7 @@
   "name": "io.github.diecoscai/hevy-mcp",
   "title": "Hevy MCP",
   "description": "MCP server for the Hevy fitness API — spec-generated schemas, dry-run-safe writes, one-command setup.",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "repository": {
     "url": "https://github.com/diecoscai/hevy-mcp",
     "source": "github"
@@ -12,7 +12,7 @@
     {
       "registryType": "npm",
       "identifier": "@diecoscai/hevy-mcp",
-      "version": "0.4.1",
+      "version": "0.5.0",
       "transport": {
         "type": "stdio"
       }

@@ -1,6 +1,6 @@
 {
   "name": "@diecoscai/hevy-mcp",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "Model Context Protocol server for the Hevy fitness API — schemas generated from Hevy's OpenAPI spec, dry-run-safe writes, one-command setup. Workouts, routines, exercises, body measurements.",
   "type": "module",
   "bin": {
@@ -9,6 +9,7 @@
   "files": [
     "dist/**",
     "docs/**",
+    "!docs/plans/**",
     "README.md",
     "LICENSE",
     "CHANGELOG.md",
