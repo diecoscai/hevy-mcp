@@ -51,6 +51,7 @@
     "lint": "biome lint src tests",
     "format": "biome format --write src tests",
     "check": "biome check src tests",
+    "generate": "kubb generate --config kubb.config.ts",
     "fetch-spec": "node scripts/fetch-spec.mjs",
     "smoke": "bash scripts/smoke.sh",
     "inspect": "npx -y @modelcontextprotocol/inspector node dist/index.js",
@@ -62,6 +63,10 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.12",
+    "@kubb/cli": "^4.37.8",
+    "@kubb/core": "^4.37.8",
+    "@kubb/plugin-oas": "^4.37.8",
+    "@kubb/plugin-zod": "^4.37.8",
     "@types/node": "^22.0.0",
     "@vitest/coverage-v8": "^4.1.4",
     "ajv": "^8.18.0",
