@@ -10,6 +10,7 @@
     "dist/**",
     "docs/**",
     "!docs/plans/**",
+    "!docs/features/**",
     "README.md",
     "LICENSE",
     "CHANGELOG.md",
