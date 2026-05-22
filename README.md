@@ -17,6 +17,17 @@ Design goals:
 - **Validated at the edge.** Every tool input is checked with [Zod](https://zod.dev/) before a single byte crosses the network. Oversized titles, unknown fields, out-of-range page sizes, and invalid enums fail fast with [SEP-1303](https://modelcontextprotocol.io/seps/1303-input-validation-errors-as-tool-execution-errors.md)-shaped errors the model can self-correct.
 - **Zero extra setup.** Authentication is a single environment variable — `HEVY_API_KEY`. No wizards, no config files; just paste the snippet for your client.
 
+Schemas are generated from Hevy's own OpenAPI spec and re-synced automatically, so the server adapts to upstream changes instead of drifting. Writes are dry-run by default; every public endpoint is covered.
+
+## Project status
+
+Maintenance mode. Feature-complete for Hevy's public API. Schemas are
+generated from Hevy's OpenAPI spec; a [scheduled workflow](.github/workflows/spec-sync.yml)
+re-syncs them weekly and opens a PR on any change, and a
+[live integration run](.github/workflows/integration.yml) catches
+undocumented server changes. Bug reports and PRs welcome via the
+[issue tracker](https://github.com/diecoscai/hevy-mcp/issues).
+
 ## Prerequisites
 
 - **Node.js 20 or later** (`node --version`).
@@ -279,6 +290,8 @@ mechanism the public API offers for change detection.
 
 If Hevy publishes webhooks in the public OpenAPI spec, subscription tools
 will land here with the same dry-run gate as the other writes.
+
+Some other Hevy MCP servers expose webhook tools by reaching Hevy's private web-session API. This server deliberately stays on the documented public API.
 
 ## Spec ≠ reality
 

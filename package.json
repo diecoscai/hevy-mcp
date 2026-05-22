@@ -1,7 +1,7 @@
 {
   "name": "@diecoscai/hevy-mcp",
   "version": "0.4.1",
-  "description": "Model Context Protocol server for the Hevy fitness API. Manage workouts, routines, exercises, and body measurements from any MCP-compatible client.",
+  "description": "Model Context Protocol server for the Hevy fitness API — schemas generated from Hevy's OpenAPI spec, dry-run-safe writes, one-command setup. Workouts, routines, exercises, body measurements.",
   "type": "module",
   "bin": {
     "hevy-mcp": "dist/index.js"
