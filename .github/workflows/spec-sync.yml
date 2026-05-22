@@ -1,0 +1,48 @@
+name: Spec sync
+
+on:
+  schedule:
+    - cron: '0 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  spec-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Re-fetch Hevy's OpenAPI spec
+        run: npm run fetch-spec
+
+      - name: Regenerate schemas
+        run: npm run generate
+
+      - name: Open a PR if the spec or generated code changed
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: chore/spec-sync
+          title: 'chore: Hevy OpenAPI spec changed — regenerated schemas'
+          body: |
+            The scheduled spec-sync detected a change in Hevy's OpenAPI
+            spec and regenerated `src/generated/`. Review the diff, run
+            the tests, and merge if it looks right. If CI is red here,
+            the change is structural and the glue in `src/validate.ts`
+            needs a hand-edit.
+          commit-message: 'chore: regenerate schemas from updated Hevy spec'
+          add-paths: |
+            openapi/hevy.json
+            src/generated/**
