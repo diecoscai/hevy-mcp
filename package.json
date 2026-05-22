@@ -51,6 +51,7 @@
     "lint": "biome lint src tests",
     "format": "biome format --write src tests",
     "check": "biome check src tests",
+    "fetch-spec": "node scripts/fetch-spec.mjs",
     "smoke": "bash scripts/smoke.sh",
     "inspect": "npx -y @modelcontextprotocol/inspector node dist/index.js",
     "prepublishOnly": "npm run build && npm test && npm run lint"
