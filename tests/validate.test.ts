@@ -79,8 +79,8 @@ describe('enum fixtures', () => {
     expect(CUSTOM_EXERCISE_TYPES).not.toContain('steps_duration');
   });
 
-  it('exposes 22 tool names', () => {
-    expect(TOOL_NAMES.length).toBe(22);
+  it('exposes 23 tool names', () => {
+    expect(TOOL_NAMES.length).toBe(23);
   });
 });
 
@@ -272,6 +272,18 @@ describe('validateInput — happy paths', () => {
       body_measurement: { weight_kg: 75.1 },
     };
     expect(validateInput('hevy_update_body_measurement', args).date).toBe('2026-04-19');
+  });
+
+  it('rejects unknown field on body measurement bodies (strict schemas)', () => {
+    expect(() =>
+      validateInput('hevy_create_body_measurement', { date: '2026-04-19', bogus: 'x' })
+    ).toThrow(ValidationError);
+    expect(() =>
+      validateInput('hevy_update_body_measurement', {
+        date: '2026-04-19',
+        body_measurement: { weight_kg: 75.1, bogus: 'x' },
+      })
+    ).toThrow(ValidationError);
   });
 });
 

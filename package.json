@@ -1,7 +1,7 @@
 {
   "name": "@diecoscai/hevy-mcp",
-  "version": "0.4.1",
-  "description": "Model Context Protocol server for the Hevy fitness API. Manage workouts, routines, exercises, and body measurements from any MCP-compatible client.",
+  "version": "0.5.0",
+  "description": "Model Context Protocol server for the Hevy fitness API — schemas generated from Hevy's OpenAPI spec, dry-run-safe writes, one-command setup. Workouts, routines, exercises, body measurements.",
   "type": "module",
   "bin": {
     "hevy-mcp": "dist/index.js"
@@ -9,6 +9,7 @@
   "files": [
     "dist/**",
     "docs/**",
+    "!docs/plans/**",
     "README.md",
     "LICENSE",
     "CHANGELOG.md",
@@ -51,6 +52,8 @@
     "lint": "biome lint src tests",
     "format": "biome format --write src tests",
     "check": "biome check src tests",
+    "generate": "kubb generate --config kubb.config.ts",
+    "fetch-spec": "node scripts/fetch-spec.mjs",
     "smoke": "bash scripts/smoke.sh",
     "inspect": "npx -y @modelcontextprotocol/inspector node dist/index.js",
     "prepublishOnly": "npm run build && npm test && npm run lint"
@@ -61,6 +64,10 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.12",
+    "@kubb/cli": "^4.37.8",
+    "@kubb/core": "^4.37.8",
+    "@kubb/plugin-oas": "^4.37.8",
+    "@kubb/plugin-zod": "^4.37.8",
     "@types/node": "^22.0.0",
     "@vitest/coverage-v8": "^4.1.4",
     "ajv": "^8.18.0",

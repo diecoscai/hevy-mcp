@@ -412,6 +412,191 @@ describe('tool handlers via mocked fetch (subprocess + nock preload)', () => {
     expect(created.content[0].text).toBe('d0778813-ce6b-4f40-a3ec-a9c0f254e3d3');
   });
 
+  it('hevy_search_exercise_templates paginates and filters by title', async () => {
+    client = startMcpServer({
+      env: { HEVY_API_KEY: 'test-key' },
+      preload: PRELOAD,
+      fixtures: [
+        {
+          method: 'GET',
+          pathRegex: '^/v1/exercise_templates\\?(?=.*\\bpage=1\\b)(?=.*\\bpageSize=100\\b)',
+          status: 200,
+          body: {
+            page: 1,
+            page_count: 2,
+            exercise_templates: [
+              { id: 'AAAAAAAA', title: 'Bench Press (Barbell)' },
+              { id: 'BBBBBBBB', title: 'Squat (Barbell)' },
+            ],
+          },
+        },
+        {
+          method: 'GET',
+          pathRegex: '^/v1/exercise_templates\\?(?=.*\\bpage=2\\b)(?=.*\\bpageSize=100\\b)',
+          status: 200,
+          body: {
+            page: 2,
+            page_count: 2,
+            exercise_templates: [{ id: 'CCCCCCCC', title: 'Incline Bench Press (Dumbbell)' }],
+          },
+        },
+      ],
+    });
+    await initializeClient(client);
+    const result = await callTool(client, 'hevy_search_exercise_templates', {
+      query: 'bench press',
+    });
+    expect(result.isError).toBeFalsy();
+    const parsed = JSON.parse(result.content[0].text) as {
+      total_matches: number;
+      exercise_templates: Array<{ id: string }>;
+    };
+    expect(parsed.total_matches).toBe(2);
+    expect(parsed.exercise_templates.map((t) => t.id).sort()).toEqual(['AAAAAAAA', 'CCCCCCCC']);
+  });
+
+  it('hevy_search_exercise_templates returns empty for a query that matches nothing', async () => {
+    client = startMcpServer({
+      env: { HEVY_API_KEY: 'test-key' },
+      preload: PRELOAD,
+      fixtures: [
+        {
+          method: 'GET',
+          pathRegex: '^/v1/exercise_templates\\?(?=.*\\bpage=1\\b)(?=.*\\bpageSize=100\\b)',
+          status: 200,
+          body: {
+            page: 1,
+            page_count: 1,
+            exercise_templates: [
+              { id: 'AAAAAAAA', title: 'Bench Press (Barbell)' },
+              { id: 'BBBBBBBB', title: 'Squat (Barbell)' },
+            ],
+          },
+        },
+      ],
+    });
+    await initializeClient(client);
+    const result = await callTool(client, 'hevy_search_exercise_templates', {
+      query: 'no such exercise',
+    });
+    expect(result.isError).toBeFalsy();
+    const parsed = JSON.parse(result.content[0].text) as {
+      total_matches: number;
+      exercise_templates: unknown[];
+    };
+    expect(parsed.total_matches).toBe(0);
+    expect(parsed.exercise_templates).toEqual([]);
+  });
+
+  it('hevy_search_exercise_templates honors limit while total_matches reports the full count', async () => {
+    client = startMcpServer({
+      env: { HEVY_API_KEY: 'test-key' },
+      preload: PRELOAD,
+      fixtures: [
+        {
+          method: 'GET',
+          pathRegex: '^/v1/exercise_templates\\?(?=.*\\bpage=1\\b)(?=.*\\bpageSize=100\\b)',
+          status: 200,
+          body: {
+            page: 1,
+            page_count: 2,
+            exercise_templates: [
+              { id: 'AAAAAAAA', title: 'Bench Press (Barbell)' },
+              { id: 'BBBBBBBB', title: 'Squat (Barbell)' },
+            ],
+          },
+        },
+        {
+          method: 'GET',
+          pathRegex: '^/v1/exercise_templates\\?(?=.*\\bpage=2\\b)(?=.*\\bpageSize=100\\b)',
+          status: 200,
+          body: {
+            page: 2,
+            page_count: 2,
+            exercise_templates: [{ id: 'CCCCCCCC', title: 'Incline Bench Press (Dumbbell)' }],
+          },
+        },
+      ],
+    });
+    await initializeClient(client);
+    const result = await callTool(client, 'hevy_search_exercise_templates', {
+      query: 'bench press',
+      limit: 1,
+    });
+    expect(result.isError).toBeFalsy();
+    const parsed = JSON.parse(result.content[0].text) as {
+      total_matches: number;
+      exercise_templates: Array<{ id: string }>;
+    };
+    expect(parsed.total_matches).toBe(2);
+    expect(parsed.exercise_templates.length).toBe(1);
+  });
+
+  it('hevy_search_exercise_templates sets truncated=true when page_count exceeds 30-page cap', async () => {
+    // Build 30 per-page fixtures (nock consumes each interceptor once). Every
+    // page reports page_count=31, so the catalog exceeds the 30-page scan cap.
+    // The loop must stop at page 30 and return truncated=true without hanging.
+    const fixtures = Array.from({ length: 30 }, (_, i) => ({
+      method: 'GET' as const,
+      pathRegex: `^/v1/exercise_templates\\?(?=.*\\bpage=${i + 1}\\b)(?=.*\\bpageSize=100\\b)`,
+      status: 200,
+      body: {
+        page: i + 1,
+        page_count: 31,
+        exercise_templates: [{ id: 'AAAAAAAA', title: 'Bench Press (Barbell)' }],
+      },
+    }));
+    client = startMcpServer({
+      env: { HEVY_API_KEY: 'test-key' },
+      preload: PRELOAD,
+      fixtures,
+    });
+    await initializeClient(client);
+    const result = await callTool(client, 'hevy_search_exercise_templates', {
+      query: 'bench press',
+    });
+    expect(result.isError).toBeFalsy();
+    const parsed = JSON.parse(result.content[0].text) as {
+      query: string;
+      total_matches: number;
+      truncated: boolean;
+      exercise_templates: Array<{ id: string }>;
+    };
+    expect(parsed.truncated).toBe(true);
+    // The loop runs exactly 30 pages (the cap) — each page has 1 match, so
+    // total_matches must be 30, not 31.
+    expect(parsed.total_matches).toBe(30);
+    expect(parsed.exercise_templates.length).toBeGreaterThan(0);
+  });
+
+  it('hevy_search_exercise_templates sets truncated=false when catalog fits within the 30-page cap', async () => {
+    client = startMcpServer({
+      env: { HEVY_API_KEY: 'test-key' },
+      preload: PRELOAD,
+      fixtures: [
+        {
+          method: 'GET',
+          pathRegex: '^/v1/exercise_templates\\?.*pageSize=100',
+          status: 200,
+          body: {
+            page: 1,
+            page_count: 1,
+            exercise_templates: [{ id: 'AAAAAAAA', title: 'Bench Press (Barbell)' }],
+          },
+        },
+      ],
+    });
+    await initializeClient(client);
+    const result = await callTool(client, 'hevy_search_exercise_templates', {
+      query: 'bench press',
+    });
+    expect(result.isError).toBeFalsy();
+    const parsed = JSON.parse(result.content[0].text) as {
+      truncated: boolean;
+    };
+    expect(parsed.truncated).toBe(false);
+  });
+
   it('hevy_get_exercise_history forwards start_date and end_date to the upstream URL', async () => {
     client = startMcpServer({
       env: { HEVY_API_KEY: 'test-key' },

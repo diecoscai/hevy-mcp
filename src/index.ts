@@ -25,6 +25,9 @@ const pkg = require('../package.json') as { name: string; version: string };
 
 const BASE_URL = 'https://api.hevyapp.com';
 const HTTP_TIMEOUT_MS = 30_000;
+// Upper bound on pages walked by hevy_search_exercise_templates. Realistic
+// Hevy catalogs are far smaller; this only guards a pathological catalog.
+const TEMPLATE_SEARCH_MAX_PAGES = 30;
 const ALLOW_WRITES = resolveAllowWrites();
 const CACHE_DISABLED = isCacheDisabled();
 const templateCache: TtlCache<unknown> | null = CACHE_DISABLED ? null : createTemplateCache();
@@ -311,7 +314,7 @@ const TOOLS: Tool[] = [
   {
     name: 'hevy_create_workout',
     description:
-      'Create a workout (POST /v1/workouts). Required: title, start_time (ISO-8601), end_time (ISO-8601), exercises[]. Each exercise needs an exercise_template_id — call hevy_list_exercise_templates (pageSize up to 100) to find it by name, or hevy_get_exercise_template if you already know the id. Set types: warmup|normal|failure|dropset. RPE is null or one of 6, 7, 7.5, 8, 8.5, 9, 9.5, 10. Superset ids must be contiguous across adjacent exercises. rep_range is routines-only and is rejected here. Dry-run by default: returns { dry_run: true, executed: false, ... } unless the env var HEVY_MCP_ALLOW_WRITES=1 is set on the server process.',
+      'Create a workout (POST /v1/workouts). Required: title, start_time (ISO-8601), end_time (ISO-8601), exercises[]. Each exercise needs an exercise_template_id — call hevy_search_exercise_templates to resolve it from a name, or hevy_get_exercise_template if you already know the id. Set types: warmup|normal|failure|dropset. RPE is null or one of 6, 7, 7.5, 8, 8.5, 9, 9.5, 10. Superset ids must be contiguous across adjacent exercises. rep_range is routines-only and is rejected here. Dry-run by default: returns { dry_run: true, executed: false, ... } unless the env var HEVY_MCP_ALLOW_WRITES=1 is set on the server process.',
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -412,6 +415,31 @@ const TOOLS: Tool[] = [
       type: 'object',
       additionalProperties: false,
       properties: { ...pageParamsLarge },
+    },
+  },
+  {
+    name: 'hevy_search_exercise_templates',
+    description:
+      'Find exercise templates by name. Paginates the full catalog (built-in + custom) and returns templates whose title contains the query, case-insensitive. Use this to resolve an exercise_template_id from a human name (e.g. "bench press") before composing a workout or routine. Response: { query, total_matches, exercise_templates: [...], truncated }. total_matches counts every match across the pages scanned; the scan stops after 30 pages of 100 — if the catalog is larger, truncated is true and total_matches is a lower bound. The catalog is cached for an hour.',
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['query'],
+      properties: {
+        query: {
+          type: 'string',
+          minLength: 1,
+          maxLength: 100,
+          description: 'Case-insensitive substring matched against the template title.',
+        },
+        limit: {
+          type: 'integer',
+          minimum: 1,
+          maximum: 100,
+          description:
+            'Maximum matches to return (default 25). total_matches reports the full count.',
+        },
+      },
     },
   },
   {
@@ -647,6 +675,38 @@ async function dispatch(name: string, rawArgs: unknown): Promise<unknown> {
       templateCache?.set(key, res);
       return res;
     }
+    case 'hevy_search_exercise_templates': {
+      const args = validateInput(name, rawArgs);
+      const needle = args.query.toLowerCase();
+      const limit = args.limit ?? 25;
+      const matches: unknown[] = [];
+      let page = 1;
+      let pageCount = 1;
+      do {
+        const key = templateListKey(page, 100);
+        let res = templateCache?.get(key);
+        if (res === undefined) {
+          res = await hevyFetch(`/v1/exercise_templates?page=${page}&pageSize=100`);
+          templateCache?.set(key, res);
+        }
+        const envelope = (res ?? {}) as { page_count?: number; exercise_templates?: unknown[] };
+        pageCount = envelope.page_count ?? 1;
+        for (const tpl of envelope.exercise_templates ?? []) {
+          const title = (tpl as { title?: unknown }).title;
+          if (typeof title === 'string' && title.toLowerCase().includes(needle)) {
+            matches.push(tpl);
+          }
+        }
+        page += 1;
+      } while (page <= pageCount && page <= TEMPLATE_SEARCH_MAX_PAGES);
+      return {
+        query: args.query,
+        total_matches: matches.length,
+        truncated: pageCount > TEMPLATE_SEARCH_MAX_PAGES,
+        exercise_templates: matches.slice(0, limit),
+      };
+    }
+
     case 'hevy_get_exercise_template': {
       const args = validateInput(name, rawArgs);
       const key = templateOneKey(args.exerciseTemplateId);

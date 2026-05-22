@@ -230,6 +230,41 @@ The server always inserts new folders at index 0.
 
 `GET /v1/exercise_templates`. **Only endpoint with `pageSize` up to 100.** Built-in ids are 8-char uppercase hex (e.g. `79D0BB3A`); custom ids are lowercase UUIDs.
 
+### `hevy_search_exercise_templates`
+
+Scans the full exercise template catalog (built-in + custom) and returns templates whose title contains `query` as a case-insensitive substring. Use this to resolve an `exercise_template_id` from a human name (e.g. `"bench press"`) before composing a workout or routine.
+
+The scan fetches pages of 100 templates and stops after **30 pages** (3 000 templates). If the catalog is larger than that, `truncated` is `true` and `total_matches` is a lower bound.
+
+Input schema:
+
+```json
+{
+  "query": "bench press",
+  "limit": 25
+}
+```
+
+- `query` (required, 1-100 chars): case-insensitive substring matched against the template title.
+- `limit` (optional, 1-100, default 25): maximum number of matching templates to return. `total_matches` always reports the full count across scanned pages.
+
+Example response:
+
+```json
+{
+  "query": "bench press",
+  "total_matches": 3,
+  "truncated": false,
+  "exercise_templates": [
+    { "id": "79D0BB3A", "title": "Bench Press (Barbell)" },
+    { "id": "A1B2C3D4", "title": "Bench Press (Dumbbell)" },
+    { "id": "E5F6G7H8", "title": "Incline Bench Press (Barbell)" }
+  ]
+}
+```
+
+When `truncated` is `true`, the catalog exceeded the 30-page scan cap; `total_matches` reflects only the pages that were scanned.
+
 ### `hevy_get_exercise_template`
 
 `GET /v1/exercise_templates/{id}`.

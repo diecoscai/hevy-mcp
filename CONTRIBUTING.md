@@ -45,6 +45,17 @@ Then:
 5. **Tests (`tests/`).** Add a unit test for the handler and extend the schema suite so every named tool gets a valid-input and an unknown-field probe.
 6. **README.** Update the tool table in the appropriate section of `README.md` and the detailed entry in `docs/tools.md`.
 
+### Generated code and the OpenAPI spec
+
+Write-tool input schemas are partly generated from Hevy's OpenAPI spec. Before adding or updating a write tool, sync the spec and regenerate:
+
+```bash
+npm run fetch-spec   # vendors the live spec to openapi/hevy.json
+npm run generate     # runs kubb; rewrites src/generated/
+```
+
+**Do not hand-edit anything under `src/generated/`** — those files are overwritten on every `npm run generate` run. Quirks that the spec omits or gets wrong (e.g. undocumented fields, tighter enum lists) live in `src/schemas/overrides.ts`; that is the right place to document and maintain divergences from the upstream spec.
+
 ## Code style
 
 This repo uses [Biome](https://biomejs.dev/) for linting and formatting. No ESLint / Prettier.

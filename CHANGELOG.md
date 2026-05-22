@@ -6,6 +6,48 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-05-22
+
+The last large release. v0.5.0 makes the project self-maintaining: it
+adopts code generation from Hevy's OpenAPI spec, adds a search tool,
+and closes the loop with two scheduled workflows that detect and adapt
+to upstream changes. After this, the project moves to maintenance mode.
+
+### Added
+
+- **`hevy_search_exercise_templates`** (tool 23). Resolves an
+  `exercise_template_id` from a human name — paginates the
+  built-in + custom catalog and filters titles by a case-insensitive
+  substring. Returns `{ query, total_matches, exercise_templates,
+  truncated }`. The scan is capped at 30 pages of 100; `truncated`
+  reports when a larger catalog made `total_matches` a lower bound.
+- **Code generation from Hevy's OpenAPI spec.** `npm run fetch-spec`
+  vendors Hevy's spec to `openapi/hevy.json`; `npm run generate` runs
+  [kubb](https://kubb.dev/) to emit Zod schemas under `src/generated/`.
+- **Scheduled `spec-sync` workflow** (Mondays 05:00 UTC). Re-fetches
+  Hevy's spec, regenerates schemas, and opens a PR if anything changed
+  — the project adapts to documented API changes without hand-editing.
+- **Scheduled `integration` workflow** (Mondays 06:00 UTC). Runs the
+  live integration suite against Hevy's API to catch changes Hevy
+  ships *without* updating its spec.
+
+### Changed
+
+- **Write-tool validation is sourced from Hevy's OpenAPI spec.** The
+  schemas that produced the v0.3.0 bug cluster — the enum value sets
+  for exercise type, muscle group, and equipment category — are now
+  generated from the spec and re-derived on every `npm run generate`,
+  so they cannot silently drift again. A thin `src/schemas/overrides.ts`
+  layer re-applies the documented quirks the spec omits (empty-string
+  rejection, strict unknown-key rejection). Workout / routine object
+  structure stays hand-written because Hevy's spec models every request
+  field as optional — see the per-tool notes in `src/validate.ts` and
+  `docs/api-quirks.md`. The 15 read-tool schemas are unchanged.
+- **Repositioned.** The package and registry descriptions, and the
+  README, now lead with spec-generation and self-syncing CI. A new
+  README "Project status" section marks the project as feature-complete
+  for Hevy's public API and in maintenance mode.
+
 ## [0.4.1] - 2026-05-20
 
 ### Security
@@ -227,7 +269,8 @@ Initial public release.
   (moderate: JSX SSR HTML injection). The SDK's peer range accepts the
   fix without a breaking bump.
 
-[Unreleased]: https://github.com/diecoscai/hevy-mcp/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/diecoscai/hevy-mcp/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/diecoscai/hevy-mcp/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/diecoscai/hevy-mcp/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/diecoscai/hevy-mcp/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/diecoscai/hevy-mcp/compare/v0.2.0...v0.3.0

@@ -1,5 +1,22 @@
 import { z } from 'zod';
 import { ValidationError } from './errors.js';
+// v0.5.0: write-tool schemas are sourced from Hevy's vendored OpenAPI spec
+// via kubb (`npm run generate`) where the generated output is a faithful,
+// durable representation of the wire contract. The overrides layer re-applies
+// behaviors the spec omits but the live server enforces (see docs/api-quirks.md).
+//
+// Not every write tool could be wired: Hevy's spec marks nearly every request
+// field `optional` and never models `required`, so the generated request-body
+// objects accept `{}` as a valid workout/routine. Using them directly as the
+// validation source of truth would LOOSEN validation. The durable signal the
+// generated schemas DO carry well — and the one that caused the v0.3.0 bug
+// class (quirks §1, §2) — is the enum value sets. Those are wired in;
+// over-loose object structure stays hand-written. See per-tool notes below.
+import { customExerciseTypeSchema } from './generated/zod/customExerciseTypeSchema.js';
+import { equipmentCategorySchema } from './generated/zod/equipmentCategorySchema.js';
+import { muscleGroupSchema } from './generated/zod/muscleGroupSchema.js';
+import { putBodyMeasurementSchema } from './generated/zod/putBodyMeasurementSchema.js';
+import { nonEmptyText, strict } from './schemas/overrides.js';
 
 export const SET_TYPES = ['warmup', 'normal', 'failure', 'dropset'] as const;
 
@@ -77,9 +94,11 @@ const exerciseTemplateIdSchema = z
     }
   );
 
-const titleSchema = z.string().min(1).max(255);
-const descriptionSchema = z.string().min(1).max(4096);
-const notesSchema = z.string().min(1).max(2048);
+// quirk §4: the server rejects empty notes/description; `nonEmptyText`
+// re-applies the minLength(1) the spec omits.
+const titleSchema = nonEmptyText(255);
+const descriptionSchema = nonEmptyText(4096);
+const notesSchema = nonEmptyText(2048);
 
 const pageSchema = z.coerce.number().int().min(1).default(1);
 const pageSizeSchema = z.coerce.number().int().min(1).max(10).default(10);
@@ -112,8 +131,6 @@ const rpeSchema = z
   });
 
 const setTypeSchema = z.enum(SET_TYPES);
-const muscleGroupSchema = z.enum(MUSCLE_GROUPS);
-const equipmentCategorySchema = z.enum(EQUIPMENT_CATEGORIES);
 
 const workoutSetSchema = z
   .object({
@@ -191,43 +208,33 @@ const routineBodyUpdateSchema = z
   })
   .strict();
 
+// Enum fields are generated (durable against spec drift); object structure is
+// hand-written because Hevy's spec marks `title` etc. with no maxLength and
+// models `other_muscles` as required — the live server treats it as optional
+// (quirk §1). title cap (100) and `.strict()` are spec-omitted overrides.
 const exerciseTemplateCreateSchema = z
   .object({
-    title: z.string().min(1).max(100),
-    exercise_type: z.enum(CUSTOM_EXERCISE_TYPES),
+    title: nonEmptyText(100),
+    exercise_type: customExerciseTypeSchema,
     muscle_group: muscleGroupSchema,
     other_muscles: z.array(muscleGroupSchema).optional(),
     equipment_category: equipmentCategorySchema,
   })
   .strict();
 
-const bodyMeasurementMetrics = z
-  .object({
-    weight_kg: z.number().finite().nullable().optional(),
-    lean_mass_kg: z.number().finite().nullable().optional(),
-    fat_percent: z.number().finite().nullable().optional(),
-    neck_cm: z.number().finite().nullable().optional(),
-    shoulder_cm: z.number().finite().nullable().optional(),
-    chest_cm: z.number().finite().nullable().optional(),
-    left_bicep_cm: z.number().finite().nullable().optional(),
-    right_bicep_cm: z.number().finite().nullable().optional(),
-    left_forearm_cm: z.number().finite().nullable().optional(),
-    right_forearm_cm: z.number().finite().nullable().optional(),
-    abdomen: z.number().finite().nullable().optional(),
-    waist: z.number().finite().nullable().optional(),
-    hips: z.number().finite().nullable().optional(),
-    left_thigh: z.number().finite().nullable().optional(),
-    right_thigh: z.number().finite().nullable().optional(),
-    left_calf: z.number().finite().nullable().optional(),
-    right_calf: z.number().finite().nullable().optional(),
-  })
-  .strict();
-
-const bodyMeasurementCreateSchema = bodyMeasurementMetrics.extend({
+// Body measurement metrics are sourced from the generated `putBodyMeasurementSchema`
+// (the 17 flat optional numeric fields). The body shape is flat on the wire for
+// both POST and PUT (quirk §7). `strict()` re-applies the unknown-key rejection
+// the generated schema omits; `date` stays hand-written because the create body
+// needs calendar-date validation that the generated `z.iso.date()` does not
+// guarantee identically. `.finite()` from the pre-0.5.0 hand-written schema is
+// dropped intentionally — JSON cannot transport Infinity/NaN, so it guarded
+// nothing, and it is not a documented quirk.
+const bodyMeasurementCreateSchema = strict(putBodyMeasurementSchema).extend({
   date: dateSchema,
 });
 
-const bodyMeasurementUpdateSchema = bodyMeasurementMetrics;
+const bodyMeasurementUpdateSchema = strict(putBodyMeasurementSchema);
 
 const schemas = {
   hevy_get_user_info: z.object({}).strict(),
@@ -263,6 +270,12 @@ const schemas = {
   hevy_list_exercise_templates: z
     .object({ page: pageSchema.optional(), pageSize: pageSizeLargeSchema.optional() })
     .strict(),
+  hevy_search_exercise_templates: z
+    .object({
+      query: z.string().min(1).max(100),
+      limit: z.coerce.number().int().min(1).max(100).optional(),
+    })
+    .strict(),
   hevy_get_exercise_template: z.object({ exerciseTemplateId: exerciseTemplateIdSchema }).strict(),
   hevy_create_exercise_template: z.object({ exercise: exerciseTemplateCreateSchema }).strict(),
 
@@ -279,6 +292,7 @@ const schemas = {
   hevy_list_body_measurements: z
     .object({ page: pageSchema.optional(), pageSize: pageSizeSchema.optional() })
     .strict(),
+  // flat by design — wire shape is flat (quirk §7); bodyMeasurementCreateSchema is already strict
   hevy_create_body_measurement: bodyMeasurementCreateSchema,
   hevy_get_body_measurement: z.object({ date: dateSchema }).strict(),
   hevy_update_body_measurement: z
