@@ -1,0 +1,33 @@
+name: Publish to MCP registry
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  publish-registry:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Download mcp-publisher
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download --repo modelcontextprotocol/registry \
+            --pattern 'mcp-publisher_linux_amd64.tar.gz' --dir . --clobber
+          tar xzf mcp-publisher_linux_amd64.tar.gz
+          ./mcp-publisher --version
+
+      - name: Validate server.json
+        run: ./mcp-publisher validate
+
+      - name: Authenticate (GitHub Actions OIDC)
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish server.json to the registry
+        run: ./mcp-publisher publish
