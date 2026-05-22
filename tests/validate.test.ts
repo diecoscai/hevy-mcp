@@ -273,6 +273,18 @@ describe('validateInput — happy paths', () => {
     };
     expect(validateInput('hevy_update_body_measurement', args).date).toBe('2026-04-19');
   });
+
+  it('rejects unknown field on body measurement bodies (strict schemas)', () => {
+    expect(() =>
+      validateInput('hevy_create_body_measurement', { date: '2026-04-19', bogus: 'x' })
+    ).toThrow(ValidationError);
+    expect(() =>
+      validateInput('hevy_update_body_measurement', {
+        date: '2026-04-19',
+        body_measurement: { weight_kg: 75.1, bogus: 'x' },
+      })
+    ).toThrow(ValidationError);
+  });
 });
 
 describe('validateInput — negative probes', () => {
