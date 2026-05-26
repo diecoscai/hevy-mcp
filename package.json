@@ -69,7 +69,7 @@
     "@kubb/core": "^4.37.8",
     "@kubb/plugin-oas": "^4.37.8",
     "@kubb/plugin-zod": "^4.37.8",
-    "@types/node": "^22.0.0",
+    "@types/node": "^25.9.1",
     "@vitest/coverage-v8": "^4.1.4",
     "ajv": "^8.18.0",
     "ajv-formats": "^3.0.1",
