@@ -9,7 +9,7 @@ Model Context Protocol server for the [Hevy](https://www.hevyapp.com/) fitness A
 
 ## Overview
 
-This MCP server exposes the public [Hevy API](https://api.hevyapp.com/docs) (`api.hevyapp.com/v1`) as 22 strongly-typed tools. LLM agents can list workouts, create routines, look up exercise templates, track body measurements, and follow a delta-sync feed — all without bespoke glue code on the client.
+This MCP server exposes the public [Hevy API](https://api.hevyapp.com/docs) (`api.hevyapp.com/v1`) as 23 strongly-typed tools. LLM agents can list workouts, create routines, look up exercise templates, track body measurements, and follow a delta-sync feed — all without bespoke glue code on the client.
 
 Design goals:
 
@@ -55,7 +55,7 @@ It prompts for your Hevy Pro API key (from <https://hevy.com/settings?developer>
 }
 ```
 
-Restart the client — the 22 Hevy tools appear in the tools panel.
+Restart the client — the 23 Hevy tools appear in the tools panel.
 
 **Prefer environment variables?** Skip `setup` and pass `HEVY_API_KEY` (and optionally `HEVY_MCP_ALLOW_WRITES=1`) in the `env` block instead — see [Configuration](#configuration). Env vars always take precedence over the config file.
 
