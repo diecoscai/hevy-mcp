@@ -7,6 +7,9 @@ import { z } from "zod/v4";
 
 export const userInfoSchema = z.object({
     "id": z.optional(z.string().describe("The user ID.")),
+"username": z.optional(z.string().describe("The user's username.")),
 "name": z.optional(z.string().describe("The user's display name.")),
-"url": z.optional(z.string().describe("The user's public profile URL."))
+"url": z.optional(z.string().describe("The user's public profile URL.")),
+"weight_unit": z.optional(z.enum(["kg", "lbs"]).describe("The user's preferred weight unit. Defaults to kg if unset.")),
+"distance_unit": z.optional(z.enum(["kilometers", "miles"]).describe("The user's preferred distance unit. Defaults to kilometers if unset."))
     })

@@ -19,7 +19,7 @@ export const workoutSchema = z.object({
 "title": z.optional(z.string().describe("Title of the exercise")),
 "notes": z.optional(z.string().describe("Notes on the exercise")),
 "exercise_template_id": z.optional(z.string().describe("The id of the exercise template. This can be used to fetch the exercise template.")),
-"supersets_id": z.number().describe("The id of the superset that the exercise belongs to. A value of null indicates the exercise is not part of a superset.").nullish(),
+"superset_id": z.number().describe("The id of the superset that the exercise belongs to. A value of null indicates the exercise is not part of a superset.").nullish(),
 "sets": z.optional(z.array(z.object({
     "index": z.optional(z.number().describe("Index indicating the order of the set in the workout.")),
 "type": z.optional(z.string().describe("The type of set. This can be one of 'normal', 'warmup', 'dropset', 'failure'")),
