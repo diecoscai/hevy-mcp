@@ -26,7 +26,7 @@ export { postRoutineFolderRequestBodySchema } from "./postRoutineFolderRequestBo
 export { postRoutinesRequestBodySchema } from "./postRoutinesRequestBodySchema.js";
 export { postRoutinesRequestExerciseSchema } from "./postRoutinesRequestExerciseSchema.js";
 export { postRoutinesRequestSetSchema } from "./postRoutinesRequestSetSchema.js";
-export { postV1BodyMeasurements200Schema, postV1BodyMeasurements400Schema, postV1BodyMeasurements409Schema, postV1BodyMeasurementsHeaderParamsSchema, postV1BodyMeasurementsMutationRequestSchema, postV1BodyMeasurementsMutationResponseSchema } from "./postV1BodyMeasurementsSchema.js";
+export { postV1BodyMeasurements201Schema, postV1BodyMeasurements400Schema, postV1BodyMeasurements409Schema, postV1BodyMeasurementsHeaderParamsSchema, postV1BodyMeasurementsMutationRequestSchema, postV1BodyMeasurementsMutationResponseSchema } from "./postV1BodyMeasurementsSchema.js";
 export { postV1ExerciseTemplates200Schema, postV1ExerciseTemplates400Schema, postV1ExerciseTemplates403Schema, postV1ExerciseTemplatesHeaderParamsSchema, postV1ExerciseTemplatesMutationRequestSchema, postV1ExerciseTemplatesMutationResponseSchema } from "./postV1ExerciseTemplatesSchema.js";
 export { postV1RoutineFolders201Schema, postV1RoutineFolders400Schema, postV1RoutineFoldersHeaderParamsSchema, postV1RoutineFoldersMutationRequestSchema, postV1RoutineFoldersMutationResponseSchema } from "./postV1RoutineFoldersSchema.js";
 export { postV1Routines201Schema, postV1Routines400Schema, postV1Routines403Schema, postV1RoutinesHeaderParamsSchema, postV1RoutinesMutationRequestSchema, postV1RoutinesMutationResponseSchema } from "./postV1RoutinesSchema.js";

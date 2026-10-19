@@ -8,7 +8,7 @@ import { z } from "zod/v4";
 
 export const getV1BodyMeasurementsQueryParamsSchema = z.object({
     "page": z.coerce.number().int().default(1).describe("Page number (Must be 1 or greater)"),
-"pageSize": z.coerce.number().int().default(10).describe("Number of items per page (Max 10)")
+"pageSize": z.coerce.number().int().max(10).default(10).describe("Number of items per page (Max 10)")
     })
 
 export const getV1BodyMeasurementsHeaderParamsSchema = z.object({

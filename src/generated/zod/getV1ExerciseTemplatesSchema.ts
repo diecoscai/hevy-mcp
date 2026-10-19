@@ -8,7 +8,7 @@ import { z } from "zod/v4";
 
 export const getV1ExerciseTemplatesQueryParamsSchema = z.object({
     "page": z.coerce.number().int().default(1).describe("Page number (Must be 1 or greater)"),
-"pageSize": z.coerce.number().int().default(5).describe("Number of items on the requested page (Max 100)")
+"pageSize": z.coerce.number().int().max(100).default(100).describe("Number of items on the requested page (Max 100)")
     })
 
 export const getV1ExerciseTemplatesHeaderParamsSchema = z.object({

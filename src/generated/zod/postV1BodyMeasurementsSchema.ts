@@ -11,9 +11,9 @@ export const postV1BodyMeasurementsHeaderParamsSchema = z.object({
     })
 
 /**
- * @description The measurement was successfully created
+ * @description The measurement was successfully created. The response body is empty.
  */
-export const postV1BodyMeasurements200Schema = z.any()
+export const postV1BodyMeasurements201Schema = z.any()
 
 /**
  * @description Invalid request body
@@ -31,4 +31,4 @@ export const postV1BodyMeasurements409Schema = z.object({
 
 export const postV1BodyMeasurementsMutationRequestSchema = z.lazy(() => bodyMeasurementSchema)
 
-export const postV1BodyMeasurementsMutationResponseSchema = z.lazy(() => postV1BodyMeasurements200Schema)
+export const postV1BodyMeasurementsMutationResponseSchema = z.lazy(() => postV1BodyMeasurements201Schema)
