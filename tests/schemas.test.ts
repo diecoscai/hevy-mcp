@@ -57,17 +57,19 @@ describe('MCP schema conformance', () => {
   it('hevy_list_workouts.inputSchema caps pageSize at 10', () => {
     const tool = tools.find((t) => t.name === 'hevy_list_workouts');
     expect(tool).toBeDefined();
-    const properties = (tool?.inputSchema as { properties: Record<string, { maximum?: number }> })
-      .properties;
-    expect(properties.pageSize.maximum).toBe(10);
+    const properties = (
+      tool?.inputSchema as { properties: Record<string, { maximum?: number }> } | undefined
+    )?.properties;
+    expect(properties?.pageSize.maximum).toBe(10);
   });
 
   it('hevy_list_exercise_templates.inputSchema caps pageSize at 100', () => {
     const tool = tools.find((t) => t.name === 'hevy_list_exercise_templates');
     expect(tool).toBeDefined();
-    const properties = (tool?.inputSchema as { properties: Record<string, { maximum?: number }> })
-      .properties;
-    expect(properties.pageSize.maximum).toBe(100);
+    const properties = (
+      tool?.inputSchema as { properties: Record<string, { maximum?: number }> } | undefined
+    )?.properties;
+    expect(properties?.pageSize.maximum).toBe(100);
   });
 
   it('every tool description is English-only (no Spanish accented markers)', () => {
