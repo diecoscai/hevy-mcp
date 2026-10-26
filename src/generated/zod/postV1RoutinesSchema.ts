@@ -14,7 +14,11 @@ export const postV1RoutinesHeaderParamsSchema = z.object({
 /**
  * @description The routine was successfully created
  */
-export const postV1Routines201Schema = z.lazy(() => routineSchema)
+export const postV1Routines201Schema = z.object({
+    get "routine"(){
+                return routineSchema.optional()
+              }
+    })
 
 /**
  * @description Invalid request body
