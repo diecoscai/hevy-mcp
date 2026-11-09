@@ -14,10 +14,10 @@ export const routineSchema = z.object({
 "exercises": z.optional(z.array(z.object({
     "index": z.optional(z.number().describe("Index indicating the order of the exercise in the routine.")),
 "title": z.optional(z.string().describe("Title of the exercise")),
-"rest_seconds": z.optional(z.string().describe("The rest time in seconds between sets of the exercise")),
-"notes": z.optional(z.string().describe("Routine notes on the exercise")),
+"rest_seconds": z.int().describe("The rest time in seconds between sets of the exercise").nullish(),
+"notes": z.string().describe("Routine notes on the exercise").nullish(),
 "exercise_template_id": z.optional(z.string().describe("The id of the exercise template. This can be used to fetch the exercise template.")),
-"supersets_id": z.number().describe("The id of the superset that the exercise belongs to. A value of null indicates the exercise is not part of a superset.").nullish(),
+"superset_id": z.number().describe("The id of the superset that the exercise belongs to. A value of null indicates the exercise is not part of a superset.").nullish(),
 "sets": z.optional(z.array(z.object({
     "index": z.optional(z.number().describe("Index indicating the order of the set in the routine.")),
 "type": z.optional(z.string().describe("The type of set. This can be one of 'normal', 'warmup', 'dropset', 'failure'")),
@@ -29,7 +29,6 @@ export const routineSchema = z.object({
     }).describe("Range of reps for the set, if applicable").nullish(),
 "distance_meters": z.number().describe("Number of meters logged for the set").nullish(),
 "duration_seconds": z.number().describe("Number of seconds logged for the set").nullish(),
-"rpe": z.number().describe("RPE (Relative perceived exertion) value logged for the set").nullish(),
 "custom_metric": z.number().describe("Custom metric logged for the set (Currently only used to log floors or steps for stair machine exercises)").nullish()
     })))
     })))
